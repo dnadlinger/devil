@@ -12,6 +12,10 @@ class Socket(QtC.QObject):
 
         self._socket = ctx.socket(sock_type)
 
+        if sock_type == zmq.SUB:
+            # By default, subscribe to everything.
+            self._socket.setsockopt(zmq.SUBSCRIBE, b'')
+
         fd = self._socket.getsockopt(zmq.FD)
         self._notifier = QtC.QSocketNotifier(fd, QtC.QSocketNotifier.Read, self)
         self._notifier.activated.connect(self._might_have_data)
@@ -30,20 +34,20 @@ class Socket(QtC.QObject):
 
     def _might_have_data(self):
         try:
-            # TODO: Do we need to try and receive multiple messages here to
-            # make sure wo do not miss any (if QSocketNotifier is strictly
-            # edge-triggered w.r.t. some internal buffer in the event loop)?
-            # On the other hand, for some 0MQ socket types like REQ/REP this
-            # breaks the protocol if we have not sent another message in the
-            # response handler.
-            msg = self._socket.recv(flags=zmq.NOBLOCK)
-            if self._response_handler:
-                handler = self._response_handler
-                self._response_handler = None
-                handler(msg)
-            else:
-                self.received_msg.emit(msg)
+            # At least for SUB sockets, we need to try to receive more messages
+            # even if there aren't any for the socket notifier to work
+            # correctly.
+            while True:
+                msg = self._socket.recv(flags=zmq.NOBLOCK)
+                if self._response_handler:
+                    handler = self._response_handler
+                    self._response_handler = None
+                    handler(msg)
+                else:
+                    self.received_msg.emit(msg)
         except zmq.ZMQError as e:
-            if e.errno != zmq.EAGAIN:
+            # EAGAIN == would have blocked
+            # EFSM == can't send/receive due to the protocol state machine
+            if e.errno not in (zmq.EAGAIN, zmq.EFSM):
                 self._response_handler = None
                 self.error.emit(e)
