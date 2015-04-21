@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from evil.channel import Channel
 from evil.devicelist import DeviceList
 import fliquer
