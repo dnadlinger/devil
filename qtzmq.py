@@ -32,6 +32,9 @@ class Socket(QtC.QObject):
         self._response_handler = response_handler
         return self.send(msg)
 
+    def close(self):
+        self._socket.close()
+
     def _might_have_data(self):
         try:
             # At least for SUB sockets, we need to try to receive more messages

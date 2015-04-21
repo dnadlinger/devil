@@ -10,6 +10,7 @@ MSGPACKRPC_NOTIFICATION = 2
 
 class Channel(QtC.QObject):
     connection_ready = QtC.pyqtSignal()
+    shutting_down = QtC.pyqtSignal()
 
     def __init__(self, zmq_ctx, host_addr, resource):
         QtC.QObject.__init__(self)
@@ -28,6 +29,8 @@ class Channel(QtC.QObject):
 
         self._send_rpc_request("notificationPort", [], self._got_notification_port)
 
+        self._active_streaming_sockets = []
+
         self._control_panel = None
 
     def show_control_panel(self):
@@ -44,7 +47,7 @@ class Channel(QtC.QObject):
         self._notification_socket.connect(self._remote_endpoint(port))
         self._notification_socket.received_msg.connect(self._handle_notification)
 
-        self._send_rpc_request("streamingPorts", [], self._got_streaming_ports)
+        self._send_rpc_request('streamingPorts', [], self._got_streaming_ports)
 
     def _got_streaming_ports(self, ports):
         QtC.qDebug('Streaming ports: {}'.format(ports))
@@ -53,12 +56,21 @@ class Channel(QtC.QObject):
 
     def _handle_notification(self, msg):
         try:
-            msg_type, method, val = msgpack.unpackb(msg, encoding='utf-8')
+            msg_type, method, params = msgpack.unpackb(msg, encoding='utf-8')
             if msg_type != MSGPACKRPC_NOTIFICATION:
-                self._rpc_error('Expected msgpack-rpc notification, but got : ' + type)
+                self._rpc_error('Expected msgpack-rpc notification, but got: ' + type)
                 return
 
-            print(method, val)
+            if method == 'shutdown':
+                self._rpc_socket.close()
+                self._notification_socket.close()
+                for s in self._active_streaming_sockets:
+                    s.close()
+                self.shutting_down.emit()
+                return
+
+            QtC.qWarning('Received unknown notification type: {}{}'.format(method, params))
+
         except Exception as e:
             self._rpc_socket(e)
 
