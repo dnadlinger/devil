@@ -9,17 +9,33 @@ MSGPACKRPC_RESPONSE = 1
 MSGPACKRPC_NOTIFICATION = 2
 
 class Channel(QtC.QObject):
+    connection_ready = QtC.pyqtSignal()
+
     def __init__(self, zmq_ctx, host_addr, resource):
         QtC.QObject.__init__(self)
+
+        self.resource = resource
 
         self._zmq_ctx = zmq_ctx
         self._host_addr = host_addr
 
+        QtC.qDebug("Connecting to {}".format(resource))
+
         self._rpc_socket = qtzmq.Socket(zmq_ctx, zmq.REQ)
+        self._rpc_socket.received_msg.connect(lambda m: print(m))
         self._rpc_socket.error.connect(self.socket_error)
         self._rpc_socket.connect(self._remote_endpoint(resource.port))
 
         self._send_rpc_request("notificationPort", [], self._got_notification_port)
+
+        self._control_panel = None
+
+    def show_control_panel(self):
+        if self._control_panel:
+            self._control_panel.activateWindow()
+        else:
+            # self._control_panel = ControlPanel()
+            QtC.qDebug('Creating Control Panel')
 
     def _got_notification_port(self, port):
         QtC.qDebug('Notification port: {}'.format(port))
@@ -33,7 +49,7 @@ class Channel(QtC.QObject):
     def _got_streaming_ports(self, ports):
         QtC.qDebug('Streaming ports: {}'.format(ports))
         self._streaming_ports = ports
-        # TODO: Register with main application
+        self.connection_ready.emit()
 
     def _handle_notification(self, msg):
         try:
@@ -52,7 +68,6 @@ class Channel(QtC.QObject):
         def handler(response):
             try:
                 msg_type, seq_id, err, ret_val = msgpack.unpackb(response, encoding='utf-8')
-
                 if msg_type != MSGPACKRPC_RESPONSE:
                     self._rpc_error('Unexpected msgpack-rpc message type: {}'.format(type))
                     return
