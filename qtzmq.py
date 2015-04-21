@@ -33,6 +33,7 @@ class Socket(QtC.QObject):
         return self.send(msg)
 
     def close(self):
+        self._notifier.setEnabled(False)
         self._socket.close()
 
     def _might_have_data(self):
