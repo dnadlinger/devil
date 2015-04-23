@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from evil.channel import Channel
+from evil.evil2channel import Evil2Channel
 from evil.devicelist import DeviceList
 import fliquer
 import zmq
@@ -20,7 +20,7 @@ if __name__ == '__main__':
     def new_resource(host, resource):
         if resource.dev_type == 'tiqi.evil.channel':
             if resource.version.major == 2:
-                device_list.register(Channel(zmq_ctx, host, resource))
+                device_list.register(Evil2Channel(zmq_ctx, host, resource))
             else:
                 QtC.qWarning('Cannot handle EVIL version {}, ignoring'.format(
                              resource.version))
