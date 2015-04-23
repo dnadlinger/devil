@@ -3,10 +3,18 @@ from PyQt5 import QtWidgets as QtW
 from PyQt5.uic import loadUi
 
 
+HEADER_SETTING = 'device_list_header'
+IN_DASHBOARD_SETTINGS = 'show_in_dashboard/'
+
 class DeviceList(QtW.QWidget):
     def __init__(self):
         QtW.QWidget.__init__(self)
         loadUi('ui/devicelist.ui', self)
+
+        s = QtC.QSettings()
+        if s.contains(HEADER_SETTING):
+            self.deviceTableWidget.horizontalHeader().restoreState(
+                s.value(HEADER_SETTING))
 
         self._channels = []
 
@@ -16,6 +24,10 @@ class DeviceList(QtW.QWidget):
         self._channels.append(channel)
         channel.connection_ready.connect(lambda: self._display_channel(channel))
         channel.shutting_down.connect(lambda: self._remove_channel(channel))
+
+    def closeEvent(self, event):
+        state = self.deviceTableWidget.horizontalHeader().saveState()
+        QtC.QSettings().setValue(HEADER_SETTING, state)
 
     def _display_channel(self, channel):
         tw = self.deviceTableWidget
@@ -46,8 +58,8 @@ class DeviceList(QtW.QWidget):
 
     def _load_dashboard_state(self, dev_id):
         s = QtC.QSettings()
-        return int(s.value('show_in_dashboard_' + dev_id, 2))
+        return int(s.value(IN_DASHBOARD_SETTINGS + dev_id, 2))
 
     def _save_dashboard_state(self, dev_id, val):
         s = QtC.QSettings()
-        s.setValue('show_in_dashboard_' + dev_id, val)
+        s.setValue(IN_DASHBOARD_SETTINGS + dev_id, val)
