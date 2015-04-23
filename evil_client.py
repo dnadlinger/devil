@@ -11,6 +11,10 @@ from PyQt5 import QtWidgets as QtW
 if __name__ == '__main__':
     import sys
 
+    QtC.QCoreApplication.setApplicationName("EVIL")
+    QtC.QCoreApplication.setOrganizationName("TIQI")
+    QtC.QCoreApplication.setOrganizationDomain("tiqi.ethz.ch")
+
     zmq_ctx = zmq.Context()
     app = QtW.QApplication(sys.argv)
     node = fliquer.Node()

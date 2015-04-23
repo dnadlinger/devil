@@ -22,19 +22,20 @@ class DeviceList(QtW.QWidget):
         row = tw.rowCount()
         tw.insertRow(row)
 
-        name = QtW.QTableWidgetItem(channel.resource.display_name)
-        tw.setItem(row, 0, name)
+        tw.setItem(row, 0, QtW.QTableWidgetItem(channel.resource.display_name))
 
-        dev_id = QtW.QTableWidgetItem(channel.resource.dev_id)
-        tw.setItem(row, 1, dev_id)
+        dev_id = channel.resource.dev_id
+        tw.setItem(row, 1, QtW.QTableWidgetItem(dev_id))
 
-        version = QtW.QTableWidgetItem(str(channel.resource.version))
-        tw.setItem(row, 2, version)
+        tw.setItem(row, 2, QtW.QTableWidgetItem(str(channel.resource.version)))
 
-        show_in_overview_box = QtW.QCheckBox()
-        tw.setCellWidget(row, 3, show_in_overview_box)
+        show_in_dashboard = QtW.QCheckBox()
+        show_in_dashboard.setChecked(self._load_dashboard_state(dev_id))
+        show_in_dashboard.stateChanged.connect(
+            lambda val: self._save_dashboard_state(dev_id, val))
+        tw.setCellWidget(row, 3, show_in_dashboard)
 
-        open_button = QtW.QPushButton("Control Panel")
+        open_button = QtW.QPushButton('Control Panel')
         open_button.clicked.connect(channel.show_control_panel)
         tw.setCellWidget(row, 4, open_button)
 
@@ -42,3 +43,11 @@ class DeviceList(QtW.QWidget):
         idx = self._channels.index(channel)
         self.deviceTableWidget.removeRow(idx)
         self._channels.remove(channel)
+
+    def _load_dashboard_state(self, dev_id):
+        s = QtC.QSettings()
+        return int(s.value('show_in_dashboard_' + dev_id, 2))
+
+    def _save_dashboard_state(self, dev_id, val):
+        s = QtC.QSettings()
+        s.setValue('show_in_dashboard_' + dev_id, val)
