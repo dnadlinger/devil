@@ -1,15 +1,15 @@
-from PyQt5 import QtCore as QtC
-from PyQt5 import QtWidgets as QtW
-from PyQt5.uic import loadUi
+from PyQt4 import QtCore as QtC
+from PyQt4 import QtGui as QtG
+from PyQt4.uic import loadUi
 
 
 HEADER_SETTING = 'device_list_header'
 IN_DASHBOARD_SETTINGS = 'show_in_dashboard/'
 
 
-class DeviceList(QtW.QWidget):
+class DeviceList(QtG.QWidget):
     def __init__(self):
-        QtW.QWidget.__init__(self)
+        QtG.QWidget.__init__(self)
         loadUi('ui/devicelist.ui', self)
 
         s = QtC.QSettings()
@@ -35,20 +35,20 @@ class DeviceList(QtW.QWidget):
         row = tw.rowCount()
         tw.insertRow(row)
 
-        tw.setItem(row, 0, QtW.QTableWidgetItem(channel.resource.display_name))
+        tw.setItem(row, 0, QtG.QTableWidgetItem(channel.resource.display_name))
 
         dev_id = channel.resource.dev_id
-        tw.setItem(row, 1, QtW.QTableWidgetItem(dev_id))
+        tw.setItem(row, 1, QtG.QTableWidgetItem(dev_id))
 
-        tw.setItem(row, 2, QtW.QTableWidgetItem(str(channel.resource.version)))
+        tw.setItem(row, 2, QtG.QTableWidgetItem(str(channel.resource.version)))
 
-        show_in_dashboard = QtW.QCheckBox()
+        show_in_dashboard = QtG.QCheckBox()
         show_in_dashboard.setChecked(self._load_dashboard_state(dev_id))
         show_in_dashboard.stateChanged.connect(
             lambda val: self._save_dashboard_state(dev_id, val))
         tw.setCellWidget(row, 3, show_in_dashboard)
 
-        open_button = QtW.QPushButton('Control Panel')
+        open_button = QtG.QPushButton('Control Panel')
         open_button.clicked.connect(channel.show_control_panel)
         tw.setCellWidget(row, 4, open_button)
 

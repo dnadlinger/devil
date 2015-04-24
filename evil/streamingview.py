@@ -1,7 +1,7 @@
 import numpy as np
-from PyQt5 import QtCore as QtC
-from PyQt5 import QtGui as QtG
-from PyQt5.uic import loadUi
+from PyQt4 import QtCore as QtC
+from PyQt4 import QtGui as QtG
+from PyQt4.uic import loadUi
 from pyqtgraph.graphicsItems.InfiniteLine import InfiniteLine
 
 class StreamingView(QtG.QWidget):

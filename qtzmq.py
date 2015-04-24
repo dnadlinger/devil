@@ -1,6 +1,6 @@
 import zmq
 
-from PyQt5 import QtCore as QtC
+from PyQt4 import QtCore as QtC
 
 
 class Socket(QtC.QObject):

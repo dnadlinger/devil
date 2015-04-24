@@ -1,6 +1,6 @@
-from PyQt5 import QtCore as QtC
-from PyQt5 import QtWidgets as QtW
-from PyQt5 import uic
+from PyQt4 import QtCore as QtC
+from PyQt4 import QtGui as QtG
+from PyQt4 import uic
 from evil.channel import Channel, ErrorCondition, Register
 from evil.controlpanel import ControlPanel
 
@@ -71,11 +71,11 @@ class Evil2Channel(Channel):
         self.error_conditions_changed.emit(self._current_error_conditions)
 
 
-class Evil2RegisterArea(QtW.QWidget):
+class Evil2RegisterArea(QtG.QWidget):
     extra_plot_items_changed = QtC.pyqtSignal(dict)
 
     def __init__(self, system_control_reg, register_name_map):
-        QtW.QWidget.__init__(self)
+        QtG.QWidget.__init__(self)
 
         uic.loadUi('ui/evil2registerarea.ui', self)
 

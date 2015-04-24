@@ -1,8 +1,8 @@
 import msgpack
 import socket
 
-from PyQt5 import QtCore as QtC
-from PyQt5 import QtNetwork as QtN
+from PyQt4 import QtCore as QtC
+from PyQt4 import QtNetwork as QtN
 
 MSGPACKRPC_NOTIFICATION = 2
 

@@ -1,20 +1,19 @@
-from PyQt5 import QtCore as QtC
-from PyQt5 import QtGui as QtG
-from PyQt5 import QtWidgets as QtW
-from PyQt5.uic import loadUi
+from PyQt4 import QtCore as QtC
+from PyQt4 import QtGui as QtG
+from PyQt4.uic import loadUi
 import numpy as np
 from evil.streamingview import StreamingView
 
 GUI_VERSION = 2.0
 
 
-class ControlPanel(QtW.QWidget):
+class ControlPanel(QtG.QWidget):
     closed = QtC.pyqtSignal()
     stream_active_channels_changed = QtC.pyqtSignal(list)
     stream_acquisition_config_changed = QtC.pyqtSignal(float, int)
 
     def __init__(self, stream_names, register_area):
-        QtW.QWidget.__init__(self)
+        QtG.QWidget.__init__(self)
 
         self._stream_names = stream_names
 
@@ -68,7 +67,7 @@ class ControlPanel(QtW.QWidget):
         # Thus, we use hideEvent instead(), which is equivalent for our purposes
         # anyway.
         self.closed.emit()
-        QtW.QWidget.hideEvent(self, event)
+        QtG.QWidget.hideEvent(self, event)
 
     def _set_extra_plot_items(self, items):
         self._extra_plot_items = items
@@ -76,7 +75,7 @@ class ControlPanel(QtW.QWidget):
             chan.set_extra_plot_items(items)
 
     def _choose_stream_snapshot_file(self):
-        filename = QtW.QFileDialog.getSaveFileName(self, directory='unnamed.evl',
+        filename = QtG.QFileDialog.getSaveFileName(self, directory='unnamed.evl',
                                                    filter='EVIL logfile (*.evl);;All files(*)')
 
         try:
@@ -165,7 +164,7 @@ class ControlPanel(QtW.QWidget):
         update_overflow_state(self.adcOverflowText, data & COND_ADC_OVERFLOW)
 
     def load_data(self):
-        filename = QtW.QFileDialog.getOpenFileName(self, filter="EVIL file (*.evf);;All files(*)")
+        filename = QtG.QFileDialog.getOpenFileName(self, filter="EVIL file (*.evf);;All files(*)")
         with open(filename, 'r') as f:
             if not f.readline().startswith('EVILfile'):
                 raise Exception('<b>Invalid file format</b>')
@@ -175,7 +174,7 @@ class ControlPanel(QtW.QWidget):
                 self.communication.write(self.settings[name])
 
     def save_data(self):
-        filename = QtW.QFileDialog.getSaveFileName(self, directory="unnamed.evf",
+        filename = QtG.QFileDialog.getSaveFileName(self, directory="unnamed.evf",
                                                    filter="EVIL file (*.evf);;All files(*)")
         with open(filename, 'w') as f:
             f.write("EVILfile\t%s\n" % GUI_VERSION)

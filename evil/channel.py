@@ -3,7 +3,7 @@ import msgpack
 import numpy as np
 import zmq
 
-from PyQt5 import QtCore as QtC
+from PyQt4 import QtCore as QtC
 
 MSGPACKRPC_REQUEST = 0
 MSGPACKRPC_RESPONSE = 1

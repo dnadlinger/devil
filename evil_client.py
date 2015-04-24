@@ -5,8 +5,8 @@ from evil.devicelist import DeviceList
 import fliquer
 import zmq
 
-from PyQt5 import QtCore as QtC
-from PyQt5 import QtWidgets as QtW
+from PyQt4 import QtCore as QtC
+from PyQt4 import QtGui as QtG
 
 if __name__ == '__main__':
     import sys
@@ -16,7 +16,7 @@ if __name__ == '__main__':
     QtC.QCoreApplication.setOrganizationDomain("tiqi.ethz.ch")
 
     zmq_ctx = zmq.Context()
-    app = QtW.QApplication(sys.argv)
+    app = QtG.QApplication(sys.argv)
     node = fliquer.Node()
 
     device_list = DeviceList()
