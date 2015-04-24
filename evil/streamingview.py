@@ -3,6 +3,7 @@ from PyQt5 import QtGui as QtG
 from PyQt5.uic import loadUi
 from pyqtgraph.graphicsItems.InfiniteLine import InfiniteLine
 
+
 class StreamingView(QtG.QWidget):
     """A streaming plot view and associated controls."""
 
@@ -67,7 +68,7 @@ class StreamingView(QtG.QWidget):
             items = self._extra_plot_items[self.channel]
 
             threshold = items.get('threshold')
-            if not threshold is None:
+            if threshold is not None:
                 self._displayed_extra_items.append(InfiniteLine(threshold, angle=0))
 
         for item in self._displayed_extra_items:

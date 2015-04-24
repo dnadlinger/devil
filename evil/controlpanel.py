@@ -43,6 +43,8 @@ class ControlPanel(QtG.QWidget):
         self._update_streaming_view_buttons()
 
         self.registerAreaLayout.addWidget(register_area)
+
+        self._extra_plot_items = {}
         register_area.extra_plot_items_changed.connect(self._set_extra_plot_items)
 
     def set_error_conditions(self, conds):
@@ -55,6 +57,7 @@ class ControlPanel(QtG.QWidget):
             l.setStyleSheet('QLabel {color: gray}')
 
     def _set_extra_plot_items(self, items):
+        self._extra_plot_items = items
         for chan in self._streaming_views:
             chan.set_extra_plot_items(items)
 

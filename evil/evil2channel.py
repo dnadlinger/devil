@@ -4,7 +4,6 @@ from PyQt5 import uic
 from evil.channel import Channel, ErrorCondition, Register
 from evil.controlpanel import ControlPanel
 
-RELOCK_THRESHOLD_REG_IDX = 10
 
 PID_RST_N = 1 << 0
 RAMP_RST_N = 1 << 1
@@ -20,7 +19,7 @@ class Evil2Channel(Channel):
         'ADC (error signal)',
         'PID/ramp output',
         'Relocking slow lowpass filter',
-        'Relocking filter difference (relocking)'
+        'Relocking filter difference'
     ]
 
     error_conditions_changed = QtC.pyqtSignal(list)
@@ -48,7 +47,7 @@ class Evil2Channel(Channel):
             'iGainSpinBox': Register(7),
             'dGainSpinBox': Register(8),
             'filterResponseSpinBox': Register(9, True),
-            'thresholdSpinBox': Register(RELOCK_THRESHOLD_REG_IDX),
+            'thresholdSpinBox': Register(10),
             'ttlExpSpinBox': Register(11)
         }
 
@@ -111,7 +110,7 @@ class Evil2RegisterArea(QtW.QWidget):
             self.sweepButton.setStyleSheet('QPushButton {color: blue}')
 
     def emit_extra_plot_items_changed(self, value):
-        value = {RELOCK_THRESHOLD_REG_IDX: {'threshold': value}}
+        value = {3: {'threshold': value}}
         self.extra_plot_items_changed.emit(value)
 
     def pid_reset(self):
