@@ -193,7 +193,7 @@ class Channel(QtC.QObject):
         except Exception as e:
             self._socket_error(e)
 
-    def _invoke_rpc(self, method, args, response_handler = None):
+    def _invoke_rpc(self, method, args, response_handler=None):
         # We do not use the sequence id, just pass zero.
         request = msgpack.packb((MSGPACKRPC_REQUEST, 0, method, args))
 

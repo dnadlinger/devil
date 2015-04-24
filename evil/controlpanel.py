@@ -1,5 +1,6 @@
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtGui as QtG
+from PyQt5 import QtWidgets as QtW
 from PyQt5.uic import loadUi
 import numpy as np
 from evil.streamingview import StreamingView
@@ -7,12 +8,12 @@ from evil.streamingview import StreamingView
 GUI_VERSION = 2.0
 
 
-class ControlPanel(QtG.QWidget):
+class ControlPanel(QtW.QWidget):
     stream_active_channels_changed = QtC.pyqtSignal(list)
     stream_acquisition_config_changed = QtC.pyqtSignal(float, int)
 
     def __init__(self, stream_names, register_area):
-        QtG.QWidget.__init__(self)
+        QtW.QWidget.__init__(self)
 
         self._stream_names = stream_names
 
@@ -62,7 +63,7 @@ class ControlPanel(QtG.QWidget):
             chan.set_extra_plot_items(items)
 
     def _choose_stream_snapshot_file(self):
-        filename = QtG.QFileDialog.getSaveFileName(self, directory='unnamed.evl',
+        filename = QtW.QFileDialog.getSaveFileName(self, directory='unnamed.evl',
                                                    filter='EVIL logfile (*.evl);;All files(*)')
 
         try:
@@ -160,7 +161,7 @@ class ControlPanel(QtG.QWidget):
         update_overflow_state(self.adcOverflowText, data & COND_ADC_OVERFLOW)
 
     def load_data(self):
-        filename = QtG.QFileDialog.getOpenFileName(self, filter="EVIL file (*.evf);;All files(*)")
+        filename = QtW.QFileDialog.getOpenFileName(self, filter="EVIL file (*.evf);;All files(*)")
         with open(filename, 'r') as f:
             if not f.readline().startswith('EVILfile'):
                 raise Exception('<b>Invalid file format</b>')
@@ -170,7 +171,7 @@ class ControlPanel(QtG.QWidget):
                 self.communication.write(self.settings[name])
 
     def save_data(self):
-        filename = QtG.QFileDialog.getSaveFileName(self, directory="unnamed.evf",
+        filename = QtW.QFileDialog.getSaveFileName(self, directory="unnamed.evf",
                                                    filter="EVIL file (*.evf);;All files(*)")
         with open(filename, 'w') as f:
             f.write("EVILfile\t%s\n" % GUI_VERSION)
