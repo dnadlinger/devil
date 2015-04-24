@@ -9,7 +9,7 @@ GUI_VERSION = 2.0
 
 class ControlPanel(QtG.QWidget):
     closed = QtC.pyqtSignal()
-    stream_active_channels_changed = QtC.pyqtSignal(list)
+    active_streams_changed = QtC.pyqtSignal()
     stream_acquisition_config_changed = QtC.pyqtSignal(float, int)
 
     def __init__(self, stream_names, register_area):
@@ -48,6 +48,9 @@ class ControlPanel(QtG.QWidget):
         self._extra_plot_items = {}
         register_area.extra_plot_items_changed.connect(self._set_extra_plot_items)
 
+    def active_stream_channels(self):
+        return [v.channel for v in self._streaming_views]
+
     def set_error_conditions(self, conds):
         l = self.errorConditionLabel
         if conds:
@@ -77,7 +80,6 @@ class ControlPanel(QtG.QWidget):
     def _choose_stream_snapshot_file(self):
         filename = QtG.QFileDialog.getSaveFileName(self, directory='unnamed.evl',
                                                    filter='EVIL logfile (*.evl);;All files(*)')
-
         try:
             if self.stream_save_file is not None:
                 self.stream_save_file.close()
@@ -110,13 +112,13 @@ class ControlPanel(QtG.QWidget):
         self.streamingViewsLayout.addWidget(view)
         self._streaming_views.append(view)
 
-        view.channel_changed.connect(self._update_active_streaming_channels)
+        view.channel_changed.connect(self.active_streams_changed)
         view.removed.connect(self._remove_streaming_view)
 
         view.set_extra_plot_items(self._extra_plot_items)
 
         self._update_streaming_view_buttons()
-        self._update_active_streaming_channels()
+        self.active_streams_changed.emit()
 
     def _remove_streaming_view(self):
         """Removes the sending streaming channel from the list."""
@@ -128,7 +130,7 @@ class ControlPanel(QtG.QWidget):
         c.deleteLater()
 
         self._update_streaming_view_buttons()
-        self._update_active_streaming_channels()
+        self.active_streams_changed.emit()
 
     def _update_streaming_view_buttons(self):
         """(De)activates streaming channel add/remove buttons.
@@ -143,25 +145,10 @@ class ControlPanel(QtG.QWidget):
         for v in self._streaming_views:
             v.enable_remove(n > 1)
 
-    def _update_active_streaming_channels(self):
-        active_channels = [v.channel for v in self._streaming_views]
-        self.stream_active_channels_changed.emit(active_channels)
-
     def _update_stream_acquisition_config(self):
         time_span_seconds = self.acquireTimeSpinBox.value()
         points = self.acquirePointsSpinBox.value()
         self.stream_acquisition_config_changed.emit(time_span_seconds, points)
-
-    def update_cond_display(self, data):
-        def update_overflow_state(widget, overflow):
-            if overflow:
-                widget.setText('over-/underflow')
-                widget.setStyleSheet('QLabel {color: red}')
-            else:
-                widget.setText('in range')
-                widget.setStyleSheet('QLabel {color: black}')
-
-        update_overflow_state(self.adcOverflowText, data & COND_ADC_OVERFLOW)
 
     def load_data(self):
         filename = QtG.QFileDialog.getOpenFileName(self, filter="EVIL file (*.evf);;All files(*)")

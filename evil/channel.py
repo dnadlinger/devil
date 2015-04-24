@@ -136,8 +136,12 @@ class Channel(QtC.QObject):
             self._control_panel.activateWindow()
         else:
             self._control_panel = self._create_control_panel()
+
             self._control_panel.closed.connect(self._destroy_control_panel)
-            self._control_panel.stream_active_channels_changed.connect(self._set_active_streams)
+
+            self._control_panel.active_streams_changed.connect(self._update_stream_subscriptions)
+            self._update_stream_subscriptions()
+
             self._control_panel.show()
 
     def _set_stream_acquisition_config(self, time_span_seconds, points):
@@ -157,7 +161,7 @@ class Channel(QtC.QObject):
         self._control_panel.deleteLater()
         self._control_panel = None
 
-        self._set_active_streams([])
+        self._update_stream_subscriptions()
 
     def _register_conflict(self, reg_idx):
         self._reg_idx_to_object[reg_idx].mark_as_desynchronized()
@@ -183,8 +187,8 @@ class Channel(QtC.QObject):
 
         self._read_registers([r.idx for r in regs], self.connection_ready.emit)
 
-    def _set_active_streams(self, streams):
-        new_active = set(streams)
+    def _update_stream_subscriptions(self):
+        new_active = set(self._control_panel.active_stream_channels()) if self._control_panel else set()
         old_active = set(self._active_stream_sockets.keys())
 
         for to_close in old_active - new_active:
