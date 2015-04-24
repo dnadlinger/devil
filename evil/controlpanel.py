@@ -4,9 +4,6 @@ from PyQt5.uic import loadUi
 import numpy as np
 from evil.streamingview import StreamingView
 
-# Bits indicating system error conditions in the control register.
-COND_ADC_OVERFLOW = 1 << 0
-
 GUI_VERSION = 2.0
 
 
@@ -47,6 +44,15 @@ class ControlPanel(QtG.QWidget):
 
         self.registerAreaLayout.addWidget(register_area)
         register_area.extra_plot_items_changed.connect(self._set_extra_plot_items)
+
+    def set_error_conditions(self, conds):
+        l = self.errorConditionLabel
+        if conds:
+            l.setText(', '.join(c.long_name for c in conds))
+            l.setStyleSheet('QLabel {color: red}')
+        else:
+            l.setText('(no hardware errors detected)')
+            l.setStyleSheet('QLabel {color: gray}')
 
     def _set_extra_plot_items(self, items):
         for chan in self._streaming_views:

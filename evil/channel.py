@@ -12,6 +12,10 @@ MSGPACKRPC_NOTIFICATION = 2
 class Register(QtC.QObject):
     changed_locally = QtC.pyqtSignal(int, int)
     changed_remotely = QtC.pyqtSignal(int)
+
+    # Catch-all for both local and remote changes.
+    changed = QtC.pyqtSignal(int)
+
     desynchronized = QtC.pyqtSignal()
 
     def __init__(self, idx, is_signed = False):
@@ -71,6 +75,12 @@ class Register(QtC.QObject):
         if self._is_signed and sval < 0:
             return sval + 2 ** 16
         return sval
+
+
+class ErrorCondition:
+    def __init__(self, short_name, long_name):
+        self.short_name = short_name
+        self.long_name = long_name
 
 
 class Channel(QtC.QObject):

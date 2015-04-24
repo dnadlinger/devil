@@ -42,29 +42,11 @@
    <item>
     <layout class="QVBoxLayout" name="streamingLayout">
      <item>
-      <layout class="QGridLayout" name="systemConditionLayout">
-       <item row="0" column="0">
-        <layout class="QHBoxLayout" name="overflowLayout">
-         <item>
-          <widget class="QLabel" name="label_10">
-           <property name="text">
-            <string>Input ADC:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="adcAOverflowText">
-           <property name="text">
-            <string>(no status data)</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-      </layout>
+      <widget class="QLabel" name="errorConditionLabel">
+       <property name="text">
+        <string>(no error condition information)</string>
+       </property>
+      </widget>
      </item>
      <item>
       <layout class="QVBoxLayout" name="streamingViewsLayout"/>

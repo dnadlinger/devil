@@ -1,7 +1,7 @@
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtWidgets as QtW
 from PyQt5 import uic
-from evil.channel import Channel, Register
+from evil.channel import Channel, ErrorCondition, Register
 from evil.controlpanel import ControlPanel
 
 RELOCK_THRESHOLD_REG_IDX = 10
@@ -23,10 +23,20 @@ class Evil2Channel(Channel):
         'Relocking filter difference (relocking)'
     ]
 
+    error_conditions_changed = QtC.pyqtSignal(list)
+
     def __init__(self, zmq_ctx, host_addr, resource):
         Channel.__init__(self, zmq_ctx, host_addr, resource)
 
         self._system_control_reg = Register(0)
+
+        self._system_condition_reg = Register(30)
+        self._system_condition_reg.changed_remotely.connect(
+            self._update_error_conditions)
+        self._cond_mask_to_error = {
+            0b1: ErrorCondition('ADC_OVER', 'Analog input out of range')
+        }
+        self._current_error_conditions = []
 
         self._widget_name_to_reg = {
             'centerSpinBox': Register(1, True),
@@ -50,7 +60,14 @@ class Evil2Channel(Channel):
     def _create_control_panel(self):
         reg_area = Evil2RegisterArea(self._system_control_reg, self._widget_name_to_reg)
         c = ControlPanel(self.STREAM_NAMES, reg_area)
+        c.set_error_conditions(self._current_error_conditions)
+        self.error_conditions_changed.connect(c.set_error_conditions)
         return c
+
+    def _update_error_conditions(self):
+        self._current_error_conditions = [e for m, e in self._cond_mask_to_error
+                                          if self._system_condition_reg.sval & m]
+        self.error_conditions_changed.emit(self._current_error_conditions)
 
 
 class Evil2RegisterArea(QtW.QWidget):
@@ -63,7 +80,7 @@ class Evil2RegisterArea(QtW.QWidget):
 
         self._system_control_reg = system_control_reg
         self._set_control_flags(system_control_reg.sval)
-        system_control_reg.changed_remotely.connect(self._set_control_flags)
+        system_control_reg.changed.connect(self._set_control_flags)
 
         for widget_name, register in register_name_map.items():
             widget = getattr(self, widget_name)
