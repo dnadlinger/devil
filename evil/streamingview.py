@@ -55,8 +55,8 @@ class StreamingView(QtG.QWidget):
         if use_trigger:
             samples = samples[packet.trigger_offset:]
 
-        self._plot_curve.setData(np.arange(0, len(samples) * interval, interval),
-                                 samples)
+        sample_times = np.linspace(0, (len(samples) - 1) * interval, len(samples))
+        self._plot_curve.setData(sample_times, samples)
 
     def set_extra_plot_items(self, extra_plot_items):
         self._extra_plot_items = extra_plot_items
