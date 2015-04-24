@@ -80,8 +80,8 @@ class Evil2RegisterArea(QtW.QWidget):
         uic.loadUi('ui/evil2registerarea.ui', self)
 
         self._system_control_reg = system_control_reg
+        self._system_control_reg.changed.connect(self._set_control_flags)
         self._set_control_flags(system_control_reg.sval)
-        system_control_reg.changed.connect(self._set_control_flags)
 
         for widget_name, register in register_name_map.items():
             widget = getattr(self, widget_name)

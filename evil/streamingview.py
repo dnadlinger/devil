@@ -1,8 +1,8 @@
+import numpy as np
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtGui as QtG
 from PyQt5.uic import loadUi
 from pyqtgraph.graphicsItems.InfiniteLine import InfiniteLine
-
 
 class StreamingView(QtG.QWidget):
     """A streaming plot view and associated controls."""
@@ -13,8 +13,6 @@ class StreamingView(QtG.QWidget):
     def __init__(self, channel_names, initial_channel=0):
         QtG.QWidget.__init__(self)
         loadUi('ui/streamingchannel.ui', self)
-
-        self._current_stream_data = []
 
         self.streamingChannelComboBox.clear()
         for name in channel_names:
@@ -27,8 +25,11 @@ class StreamingView(QtG.QWidget):
         self.removeViewButton.setIcon(QtG.QIcon('ui/images/list-remove.png'))
         self.removeViewButton.clicked.connect(self.removed)
 
-        self.plotWidget.getPlotItem().setRange(xRange=(0, 1), yRange=(-512, 512), padding = 0)
-        self.plotWidget.getPlotItem().setLabel('bottom', 'time', 's')
+        pi = self.plotWidget.getPlotItem()
+        pi.setRange(xRange=(0, 1), yRange=(-512, 512), padding = 0)
+        pi.setLabel('bottom', 'time', 's')
+        self._plot_curve = pi.plot()
+
         self._extra_plot_items = {}
         self._displayed_extra_items = []
 
@@ -40,20 +41,22 @@ class StreamingView(QtG.QWidget):
     def enable_remove(self, can_remove):
         self.removeViewButton.setEnabled(can_remove)
 
-    def update_stream_data(self, channel, data):
-        if channel != self.channel:
+    def got_packet(self, packet):
+        if packet.stream_idx != self.channel:
             return
 
+        samples = packet.samples
+        interval = packet.sample_interval_seconds
+
+        pi = self.plotWidget.getPlotItem()
+        pi.setRange(xRange=(0, len(samples) * interval), padding = 0)
+
         use_trigger = self.rampTriggerCheckBox.isChecked()
-        # FIXME: Use trigger.
+        if use_trigger:
+            samples = samples[packet.trigger_offset:]
 
-        # self.plotWidget.getPlotItem().setRange(xRange=(0, max_time), padding = 0)
-
-        self._current_stream_data = data
-        if data.shape[1] > 0:
-            self.plotWidget.getPlotItem().plot(data[0, :], data[1, :], clear=True)
-            for item in self._displayed_extra_items:
-                self.plotWidget.getPlotItem().addItem(item)
+        self._plot_curve.setData(np.arange(0, len(samples) * interval, interval),
+                                 samples)
 
     def set_extra_plot_items(self, extra_plot_items):
         self._extra_plot_items = extra_plot_items

@@ -58,6 +58,10 @@ class ControlPanel(QtW.QWidget):
             l.setText('(no hardware errors detected)')
             l.setStyleSheet('QLabel {color: gray}')
 
+    def got_stream_packet(self, packet):
+        for v in self._streaming_views:
+            v.got_packet(packet)
+
     def hideEvent(self, event):
         # Note: For whatever reason, closeEvent() does not get called on these
         # windows, only on the first created one (?), i.e. the device list.
@@ -148,15 +152,6 @@ class ControlPanel(QtW.QWidget):
         time_span_seconds = self.acquireTimeSpinBox.value()
         points = self.acquirePointsSpinBox.value()
         self.stream_acquisition_config_changed.emit(time_span_seconds, points)
-
-    def got_stream_data(self, reg_id, data):
-        data_l = len(data)
-        dt = 1e-3 / self.settings['hardwareSampleDelaySpinBox'].widget.sample_rate()
-        xdata = np.linspace(0, dt * data_l, data_l)
-
-        data_with_axis = np.vstack((xdata, 4 * data))
-        for v in self._streaming_views:
-            v.update_stream_data(reg_id, data_with_axis)
 
     def update_cond_display(self, data):
         def update_overflow_state(widget, overflow):
