@@ -115,6 +115,7 @@ class Channel(QtC.QObject):
             self._control_panel.activateWindow()
         else:
             self._control_panel = self._create_control_panel()
+            self._control_panel.closed.connect(self._destroy_control_panel)
             self._control_panel.show()
 
     def _set_stream_acquisition_config(self, time_span_seconds, points):
@@ -129,6 +130,10 @@ class Channel(QtC.QObject):
 
     def _create_control_panel(self):
         raise NotImplementedError('Need to implement control panel for specific EVIL version')
+
+    def _destroy_control_panel(self):
+        self._control_panel.deleteLater()
+        self._control_panel = None
 
     def _register_conflict(self, reg_idx):
         self._reg_idx_to_object[reg_idx].mark_as_desynchronized()

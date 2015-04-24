@@ -9,6 +9,7 @@ GUI_VERSION = 2.0
 
 
 class ControlPanel(QtW.QWidget):
+    closed = QtC.pyqtSignal()
     stream_active_channels_changed = QtC.pyqtSignal(list)
     stream_acquisition_config_changed = QtC.pyqtSignal(float, int)
 
@@ -56,6 +57,14 @@ class ControlPanel(QtW.QWidget):
         else:
             l.setText('(no hardware errors detected)')
             l.setStyleSheet('QLabel {color: gray}')
+
+    def hideEvent(self, event):
+        # Note: For whatever reason, closeEvent() does not get called on these
+        # windows, only on the first created one (?), i.e. the device list.
+        # Thus, we use hideEvent instead(), which is equivalent for our purposes
+        # anyway.
+        self.closed.emit()
+        QtW.QWidget.hideEvent(self, event)
 
     def _set_extra_plot_items(self, items):
         self._extra_plot_items = items

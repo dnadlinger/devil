@@ -6,6 +6,7 @@ from PyQt5.uic import loadUi
 HEADER_SETTING = 'device_list_header'
 IN_DASHBOARD_SETTINGS = 'show_in_dashboard/'
 
+
 class DeviceList(QtW.QWidget):
     def __init__(self):
         QtW.QWidget.__init__(self)
