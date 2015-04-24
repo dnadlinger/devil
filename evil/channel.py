@@ -9,6 +9,7 @@ MSGPACKRPC_REQUEST = 0
 MSGPACKRPC_RESPONSE = 1
 MSGPACKRPC_NOTIFICATION = 2
 
+MSGPACK_EXT_INT8ARRAY = 1
 
 class Register(QtC.QObject):
     changed_locally = QtC.pyqtSignal(int, int)
@@ -93,8 +94,8 @@ class StreamPacket:
         self.sample_interval_seconds = sample_interval_seconds
         self.trigger_offset = trigger_offset
 
-        if data_type == 1:
-            self.samples = np.fromstring(data_buffer, np.int8)
+        if data_type == MSGPACK_EXT_INT8ARRAY:
+            self.samples = np.fromstring(data_buffer, np.int8).astype(np.int16)
 
             # To match true 10 bit range of hardware resolution; mainly to
             # account for an eventual upgrade and to not break user expectations
