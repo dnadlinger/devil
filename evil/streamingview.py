@@ -19,8 +19,10 @@ class StreamingView(QtG.QWidget):
             self.streamingChannelComboBox.addItem(name)
         self.streamingChannelComboBox.setCurrentIndex(initial_channel)
 
-        self.streamingChannelComboBox.currentIndexChanged.connect(self.channel_changed)
-        self.streamingChannelComboBox.currentIndexChanged.connect(self._add_extra_items_from_dict)
+        self.streamingChannelComboBox.currentIndexChanged.connect(
+            self.channel_changed)
+        self.streamingChannelComboBox.currentIndexChanged.connect(
+            self._add_extra_items_from_dict)
 
         self.removeViewButton.setIcon(QtG.QIcon('ui/images/list-remove.png'))
         self.removeViewButton.clicked.connect(self.removed)

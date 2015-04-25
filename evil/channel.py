@@ -11,6 +11,7 @@ MSGPACKRPC_NOTIFICATION = 2
 
 MSGPACK_EXT_INT8ARRAY = 1
 
+
 class Register(QtC.QObject):
     changed_locally = QtC.pyqtSignal(int, int)
     changed_remotely = QtC.pyqtSignal(int)
@@ -20,7 +21,7 @@ class Register(QtC.QObject):
 
     desynchronized = QtC.pyqtSignal()
 
-    def __init__(self, idx, is_signed = False):
+    def __init__(self, idx, is_signed=False):
         QtC.QObject.__init__(self)
 
         self.idx = idx
@@ -53,7 +54,8 @@ class Register(QtC.QObject):
             return
         try:
             i = self._remote_updates_to_ignore.index(new_uval)
-            self._remote_updates_to_ignore = self._remote_updates_to_ignore[i + 1:]
+            self._remote_updates_to_ignore = self._remote_updates_to_ignore[
+                                             i + 1:]
         except ValueError:
             self._remote_updates_to_ignore.clear()
             if new_uval != self._uval:
@@ -72,7 +74,7 @@ class Register(QtC.QObject):
         self.desynchronized.emit()
 
     def _from_unsigned(self, uval):
-        if self._is_signed and uval >= 2**15:
+        if self._is_signed and uval >= 2 ** 15:
             return uval - 2 ** 16
         return uval
 
@@ -89,7 +91,8 @@ class ErrorCondition:
 
 
 class StreamPacket:
-    def __init__(self, stream_idx, sample_interval_seconds, trigger_offset, data_type, data_buffer):
+    def __init__(self, stream_idx, sample_interval_seconds, trigger_offset,
+                 data_type, data_buffer):
         self.stream_idx = stream_idx
         self.sample_interval_seconds = sample_interval_seconds
         self.trigger_offset = trigger_offset
@@ -102,7 +105,8 @@ class StreamPacket:
             # from the old client.
             self.samples *= 4
         else:
-            raise Exception('Unknown stream sample data type: {}'.format(data_type))
+            raise Exception(
+                'Unknown stream sample data type: {}'.format(data_type))
 
 
 class Channel(QtC.QObject):
@@ -126,7 +130,8 @@ class Channel(QtC.QObject):
 
         self._rpc_socket = qtzmq.Socket(zmq_ctx, zmq.REQ)
         self._rpc_socket.received_msg.connect(
-            lambda m: QtC.qCritical('Unhandled message on RPC socket: {}'.format(m)))
+            lambda m: QtC.qCritical(
+                'Unhandled message on RPC socket: {}'.format(m)))
         self._rpc_socket.error.connect(self._socket_error)
         self._rpc_socket.connect(self._remote_endpoint(resource.port))
 
@@ -143,10 +148,13 @@ class Channel(QtC.QObject):
 
             self._control_panel.closed.connect(self._destroy_control_panel)
 
-            self._control_panel.set_stream_acquisition_config(*self._stream_acquisition_config)
-            self._control_panel.stream_acquisition_config_changed.connect(self._set_stream_acquisition_config)
+            self._set_stream_acquisition_config(
+                *self._stream_acquisition_config)
+            self._control_panel.stream_acquisition_config_changed.connect(
+                self._set_stream_acquisition_config)
 
-            self._control_panel.active_streams_changed.connect(self._update_stream_subscriptions)
+            self._control_panel.active_streams_changed.connect(
+                self._update_stream_subscriptions)
             self._update_stream_subscriptions()
 
             self._control_panel.show()
@@ -158,13 +166,15 @@ class Channel(QtC.QObject):
 
     def _modify_register(self, reg_idx, old_val, new_val):
         self._invoke_rpc('modifyRegister', [reg_idx, old_val, new_val],
-                         lambda succeeded: succeeded or self._register_conflict(reg_idx))
+                         lambda succeeded: succeeded or self._register_conflict(
+                             reg_idx))
 
     def _registers(self):
         return []
 
     def _create_control_panel(self):
-        raise NotImplementedError('Need to implement control panel for specific EVIL version')
+        raise NotImplementedError(
+            'Need to implement control panel for specific EVIL version')
 
     def _destroy_control_panel(self):
         self._control_panel.deleteLater()
@@ -192,12 +202,15 @@ class Channel(QtC.QObject):
         for r in regs:
             self._reg_idx_to_object[r.idx] = r
             r.changed_locally.connect(lambda old_val, new_val, idx=r.idx:
-                                      self._modify_register(idx, old_val, new_val))
+                                      self._modify_register(idx, old_val,
+                                                            new_val))
 
-        self._read_registers([r.idx for r in regs], self._read_stream_acquisition_config)
+        self._read_registers([r.idx for r in regs],
+                             self._read_stream_acquisition_config)
 
     def _update_stream_subscriptions(self):
-        new_active = set(self._control_panel.active_stream_channels()) if self._control_panel else set()
+        new_active = set(
+            self._control_panel.active_stream_channels()) if self._control_panel else set()
         old_active = set(self._active_stream_sockets.keys())
 
         for to_close in old_active - new_active:
@@ -206,7 +219,8 @@ class Channel(QtC.QObject):
 
         for to_open in new_active - old_active:
             s = qtzmq.Socket(self._zmq_ctx, zmq.SUB)
-            s.received_msg.connect(lambda msg, idx=to_open: self._got_stream_packet(idx, msg))
+            s.received_msg.connect(
+                lambda msg, idx=to_open: self._got_stream_packet(idx, msg))
             s.connect(self._remote_endpoint(self._stream_ports[to_open]))
             self._active_stream_sockets[to_open] = s
 
@@ -225,7 +239,8 @@ class Channel(QtC.QObject):
         self._invoke_rpc('readRegister', [idx], handle)
 
     def _read_stream_acquisition_config(self):
-        self._invoke_rpc('streamAcquisitionConfig', [], self._got_stream_acquisition_config)
+        self._invoke_rpc('streamAcquisitionConfig', [],
+                         self._got_stream_acquisition_config)
 
     def _got_stream_acquisition_config(self, val):
         time_span_seconds, points = val
@@ -236,7 +251,9 @@ class Channel(QtC.QObject):
         try:
             msg_type, method, params = msgpack.unpackb(msg, encoding='utf-8')
             if msg_type != MSGPACKRPC_NOTIFICATION:
-                self._rpc_error('Expected msgpack-rpc notification, but got: {}'.format(type))
+                self._rpc_error(
+                    'Expected msgpack-rpc notification, but got: {}'.format(
+                        type))
                 return
 
             if method == 'registerChanged':
@@ -248,7 +265,8 @@ class Channel(QtC.QObject):
                 time_span_seconds, points = params
                 self._stream_acquisition_config = (time_span_seconds, points)
                 if self._control_panel:
-                    self._control_panel.set_stream_acquisition_config(time_span_seconds, points)
+                    self._control_panel.set_stream_acquisition_config(
+                        time_span_seconds, points)
                 return
 
             if method == 'shutdown':
@@ -260,7 +278,9 @@ class Channel(QtC.QObject):
                 self.shutting_down.emit()
                 return
 
-            QtC.qWarning('Received unknown notification type: {}{}'.format(method, params))
+            QtC.qWarning(
+                'Received unknown notification type: {}{}'.format(method,
+                                                                  params))
         except Exception as e:
             self._rpc_error('Error while handling notification: {}'.format(e))
 
@@ -268,11 +288,14 @@ class Channel(QtC.QObject):
         try:
             msg_type, method, params = msgpack.unpackb(msg, encoding='utf-8')
             if msg_type != MSGPACKRPC_NOTIFICATION:
-                self._rpc_error('Expected msgpack-rpc notification for streaming packet, but got: {}'.format(msg_type))
+                self._rpc_error(
+                    'Expected msgpack-rpc notification for streaming packet, but got: {}'.format(
+                        msg_type))
                 return
 
             if method != 'streamPacket':
-                self._rpc_error('Invalid method on streaming socket: {}'.format(method))
+                self._rpc_error(
+                    'Invalid method on streaming socket: {}'.format(method))
                 return
 
             p = params[0]
@@ -280,7 +303,8 @@ class Channel(QtC.QObject):
             trigger = p['triggerOffset']
             sample_type = p['samples'].code
             sample_buffer = p['samples'].data
-            packet = StreamPacket(stream_idx, interval, trigger, sample_type, sample_buffer)
+            packet = StreamPacket(stream_idx, interval, trigger, sample_type,
+                                  sample_buffer)
 
             if self._control_panel:
                 self._control_panel.got_stream_packet(packet)
@@ -298,9 +322,11 @@ class Channel(QtC.QObject):
 
     def _got_rpc_response(self, response):
         try:
-            msg_type, seq_id, err, ret_val = msgpack.unpackb(response, encoding='utf-8')
+            msg_type, seq_id, err, ret_val = msgpack.unpackb(response,
+                                                             encoding='utf-8')
             if msg_type != MSGPACKRPC_RESPONSE:
-                self._rpc_error('Unexpected msgpack-rpc message type: {}'.format(msg_type))
+                self._rpc_error(
+                    'Unexpected msgpack-rpc message type: {}'.format(msg_type))
             elif err:
                 self._rpc_error(err)
             else:
