@@ -12,12 +12,13 @@ class ControlPanel(QtG.QWidget):
     active_streams_changed = QtC.pyqtSignal()
     stream_acquisition_config_changed = QtC.pyqtSignal(float, int)
 
-    def __init__(self, stream_names, register_area):
+    def __init__(self, channel_name, stream_names, register_area):
         QtG.QWidget.__init__(self)
 
         self._stream_names = stream_names
 
         loadUi('ui/controlpanel.ui', self)
+        self.setWindowTitle(channel_name + ' – EVIL')
 
         self.stream_save_file = None
         self.current_stream_data = None

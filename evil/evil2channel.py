@@ -59,7 +59,8 @@ class Evil2Channel(Channel):
     def _create_control_panel(self):
         reg_area = Evil2RegisterArea(self._system_control_reg, self._widget_name_to_reg)
 
-        c = ControlPanel(self.STREAM_NAMES, reg_area)
+        c = ControlPanel(self.resource.display_name, self.STREAM_NAMES,
+                         reg_area)
         c.set_error_conditions(self._current_error_conditions)
         self.error_conditions_changed.connect(c.set_error_conditions)
 
