@@ -72,6 +72,15 @@ class ControlPanel(QtG.QWidget):
         self.closed.emit()
         QtG.QWidget.hideEvent(self, event)
 
+    def set_stream_acquisition_config(self, time_span_seconds, points):
+        self.acquireTimeSpinBox.setValue(time_span_seconds * 1000)
+        self.acquirePointsSpinBox.setValue(points)
+
+    def _update_stream_acquisition_config(self):
+        time_span_seconds = self.acquireTimeSpinBox.value() / 1000.0
+        points = self.acquirePointsSpinBox.value()
+        self.stream_acquisition_config_changed.emit(time_span_seconds, points)
+
     def _set_extra_plot_items(self, items):
         self._extra_plot_items = items
         for chan in self._streaming_views:
@@ -144,11 +153,6 @@ class ControlPanel(QtG.QWidget):
             n < len(self._stream_names))
         for v in self._streaming_views:
             v.enable_remove(n > 1)
-
-    def _update_stream_acquisition_config(self):
-        time_span_seconds = self.acquireTimeSpinBox.value()
-        points = self.acquirePointsSpinBox.value()
-        self.stream_acquisition_config_changed.emit(time_span_seconds, points)
 
     def load_data(self):
         filename = QtG.QFileDialog.getOpenFileName(self, filter="EVIL file (*.evf);;All files(*)")

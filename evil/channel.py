@@ -130,6 +130,9 @@ class Channel(QtC.QObject):
         self._rpc_socket.error.connect(self._socket_error)
         self._rpc_socket.connect(self._remote_endpoint(resource.port))
 
+        self._stream_ports = []
+        self._stream_acquisition_config = None
+
         self._invoke_rpc('notificationPort', [], self._got_notification_port)
 
     def show_control_panel(self):
@@ -140,13 +143,18 @@ class Channel(QtC.QObject):
 
             self._control_panel.closed.connect(self._destroy_control_panel)
 
+            self._control_panel.set_stream_acquisition_config(*self._stream_acquisition_config)
+            self._control_panel.stream_acquisition_config_changed.connect(self._set_stream_acquisition_config)
+
             self._control_panel.active_streams_changed.connect(self._update_stream_subscriptions)
             self._update_stream_subscriptions()
 
             self._control_panel.show()
 
     def _set_stream_acquisition_config(self, time_span_seconds, points):
-        self._invoke_rpc('setStreamAcquisitionConfig', [time_span_seconds, points])
+        config = time_span_seconds, points
+        if config != self._stream_acquisition_config:
+            self._invoke_rpc('setStreamAcquisitionConfig', config)
 
     def _modify_register(self, reg_idx, old_val, new_val):
         self._invoke_rpc('modifyRegister', [reg_idx, old_val, new_val],
@@ -186,7 +194,7 @@ class Channel(QtC.QObject):
             r.changed_locally.connect(lambda old_val, new_val, idx=r.idx:
                                       self._modify_register(idx, old_val, new_val))
 
-        self._read_registers([r.idx for r in regs], self.connection_ready.emit)
+        self._read_registers([r.idx for r in regs], self._read_stream_acquisition_config)
 
     def _update_stream_subscriptions(self):
         new_active = set(self._control_panel.active_stream_channels()) if self._control_panel else set()
@@ -216,6 +224,14 @@ class Channel(QtC.QObject):
 
         self._invoke_rpc('readRegister', [idx], handle)
 
+    def _read_stream_acquisition_config(self):
+        self._invoke_rpc('streamAcquisitionConfig', [], self._got_stream_acquisition_config)
+
+    def _got_stream_acquisition_config(self, val):
+        time_span_seconds, points = val
+        self._stream_acquisition_config = (time_span_seconds, points)
+        self.connection_ready.emit()
+
     def _got_notification(self, msg):
         try:
             msg_type, method, params = msgpack.unpackb(msg, encoding='utf-8')
@@ -226,6 +242,13 @@ class Channel(QtC.QObject):
             if method == 'registerChanged':
                 idx, value = params
                 self._reg_idx_to_object[idx].set_from_remote_notification(value)
+                return
+
+            if method == 'streamAcquisitionConfigChanged':
+                time_span_seconds, points = params
+                self._stream_acquisition_config = (time_span_seconds, points)
+                if self._control_panel:
+                    self._control_panel.set_stream_acquisition_config(time_span_seconds, points)
                 return
 
             if method == 'shutdown':

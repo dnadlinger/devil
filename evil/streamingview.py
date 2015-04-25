@@ -28,7 +28,7 @@ class StreamingView(QtG.QWidget):
         pi = self.plotWidget.getPlotItem()
         pi.setRange(xRange=(0, 1), yRange=(-512, 512), padding = 0)
         pi.setLabel('bottom', 'time', 's')
-        self._plot_curve = pi.plot()
+        self._plot_curve = pi.plot(antialias=True)
 
         self._extra_plot_items = {}
         self._displayed_extra_items = []
