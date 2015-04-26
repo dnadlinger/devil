@@ -20,6 +20,7 @@ if __name__ == '__main__':
     node = fliquer.Node()
 
     device_list = DeviceList()
+    device_list.force_rescan.connect(node.broadcast_enumeration_request)
 
     def new_resource(host, resource):
         if resource.dev_type == 'tiqi.evil.channel':

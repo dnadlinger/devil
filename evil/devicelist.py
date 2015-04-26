@@ -8,6 +8,8 @@ IN_DASHBOARD_SETTINGS = 'show_in_dashboard/'
 
 
 class DeviceList(QtG.QWidget):
+    force_rescan = QtC.pyqtSignal()
+
     def __init__(self):
         QtG.QWidget.__init__(self)
         loadUi('ui/devicelist.ui', self)
@@ -16,6 +18,8 @@ class DeviceList(QtG.QWidget):
         if s.contains(HEADER_SETTING):
             self.deviceTableWidget.horizontalHeader().restoreState(
                 s.value(HEADER_SETTING))
+
+        self.forceRescanButton.clicked.connect(self.force_rescan)
 
         self.channels = []
 
