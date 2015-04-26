@@ -17,12 +17,12 @@ class DeviceList(QtG.QWidget):
             self.deviceTableWidget.horizontalHeader().restoreState(
                 s.value(HEADER_SETTING))
 
-        self._channels = []
+        self.channels = []
 
     def register(self, channel):
         # We need to keep a reference to the object around as connecting to a
         # signal only creates a weak references.
-        self._channels.append(channel)
+        self.channels.append(channel)
         channel.connection_ready.connect(lambda: self._display_channel(channel))
         channel.shutting_down.connect(lambda: self._remove_channel(channel))
 
@@ -53,9 +53,9 @@ class DeviceList(QtG.QWidget):
         tw.setCellWidget(row, 4, open_button)
 
     def _remove_channel(self, channel):
-        idx = self._channels.index(channel)
+        idx = self.channels.index(channel)
         self.deviceTableWidget.removeRow(idx)
-        self._channels.remove(channel)
+        self.channels.remove(channel)
 
     def _load_dashboard_state(self, dev_id):
         s = QtC.QSettings()

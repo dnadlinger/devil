@@ -23,6 +23,11 @@ if __name__ == '__main__':
 
     def new_resource(host, resource):
         if resource.dev_type == 'tiqi.evil.channel':
+            if resource.dev_id in [c.resource.dev_id for c in
+                                   device_list.channels]:
+                # Resource already exists, ignore.
+                return
+
             if resource.version.major == 2:
                 device_list.register(Evil2Channel(zmq_ctx, host, resource))
             else:
