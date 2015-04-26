@@ -35,11 +35,10 @@ class Register(QtC.QObject):
         return self._from_unsigned(self._uval)
 
     def set_from_local_change(self, new_sval):
-        new_uval = self._to_unsigned(new_sval)
-
         if not self._synchronized:
             return
 
+        new_uval = self._to_unsigned(new_sval)
         if self._uval == new_uval:
             return
 
@@ -52,6 +51,7 @@ class Register(QtC.QObject):
     def set_from_remote_notification(self, new_uval):
         if not self._synchronized:
             return
+
         try:
             i = self._remote_updates_to_ignore.index(new_uval)
             self._remote_updates_to_ignore = self._remote_updates_to_ignore[

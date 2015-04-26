@@ -84,7 +84,9 @@ class Evil2RegisterArea(QtG.QWidget):
         self._system_control_reg.changed.connect(self._set_control_flags)
         self._set_control_flags(system_control_reg.sval)
 
+        self._widgets_to_save = []
         for widget_name, register in register_name_map.items():
+            self._widgets_to_save.append(widget_name)
             widget = getattr(self, widget_name)
             register.changed_remotely.connect(widget.setValue)
             widget.setValue(register.sval)
@@ -94,7 +96,25 @@ class Evil2RegisterArea(QtG.QWidget):
         self.flipPolarityButton.clicked.connect(self.toggle_polarity)
         self.resetPidButton.clicked.connect(self.pid_reset)
         self.relockingEnabledCheckBox.clicked.connect(self.toggle_relocking)
-        self.thresholdSpinBox.valueChanged.connect(self.emit_extra_plot_items_changed)
+        self.thresholdSpinBox.valueChanged.connect(
+            self.emit_extra_plot_items_changed)
+
+    def load_settings(self, settings):
+        for key, value in settings.items():
+            if key == 'systemControl':
+                self._set_control_flags(value)
+                continue
+
+            widget = getattr(self, key, None)
+            if widget:
+                widget.setValue(value)
+
+    def save_settings(self):
+        settings = {}
+        for key in self._widgets_to_save:
+            settings[key] = getattr(self, key).value()
+        settings['systemControl'] = self._control_flags
+        return settings
 
     def _set_control_flags(self, flags):
         self._control_flags = flags

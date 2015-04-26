@@ -4,7 +4,7 @@ from PyQt4.uic import loadUi
 import numpy as np
 from evil.streamingview import StreamingView
 
-GUI_VERSION = 2.0
+GUI_VERSION = 4.0
 
 
 class ControlPanel(QtG.QWidget):
@@ -23,8 +23,8 @@ class ControlPanel(QtG.QWidget):
         self.stream_save_file = None
         self.current_stream_data = None
 
-        self.loadButton.clicked.connect(self.load_data)
-        self.saveButton.clicked.connect(self.save_data)
+        self.loadButton.clicked.connect(self._load_settings)
+        self.saveButton.clicked.connect(self._save_settings)
         self.streamSnapshotFileButton.clicked.connect(self._choose_stream_snapshot_file)
 
         self.streamSnapshotButton.setIcon(QtG.QIcon('ui/images/shot.png'))
@@ -44,6 +44,7 @@ class ControlPanel(QtG.QWidget):
         self.addStreamingViewButton.clicked.connect(self.add_streaming_view)
         self._update_streaming_view_buttons()
 
+        self._register_area = register_area
         self.registerAreaLayout.addWidget(register_area)
 
         self._extra_plot_items = {}
@@ -155,24 +156,68 @@ class ControlPanel(QtG.QWidget):
         for v in self._streaming_views:
             v.enable_remove(n > 1)
 
-    def load_data(self):
+    def _load_settings(self):
         filename = QtG.QFileDialog.getOpenFileName(self, filter="EVIL file (*.evf);;All files(*)")
-        with open(filename, 'r') as f:
-            if not f.readline().startswith('EVILfile'):
-                raise Exception('<b>Invalid file format</b>')
-            for line in f:
-                name, val = line.split("\t")
-                self.settings[name].value(int(val))
-                self.communication.write(self.settings[name])
+        if not filename:
+            return
 
-    def save_data(self):
+        try:
+            with open(filename, 'r') as f:
+                header_line = f.readline()
+                if not header_line.startswith('EVILfile'):
+                    raise Exception('Invalid file format')
+
+                dual_file = False
+                if header_line.split('\t')[1].startswith('2.'):
+                    dual_file = True
+                    msg = 'This file has been created by an old client ' \
+                          'software version. Select "Yes" to load the ' \
+                          'settings stored for the fast channel, or "No" for ' \
+                          'the slow channel.'
+                    res = QtG.QMessageBox.question(self, 'EVIL – Load fast '
+                                                         'channel?',
+                                                   msg, QtG.QMessageBox.Yes |
+                                                   QtG.QMessageBox.No,
+                                                   QtG.QMessageBox.Yes)
+                    load_fast = res == QtG.QMessageBox.Yes
+
+                SLOW_PREFIX = 'slow_pid_'
+
+                settings = {}
+                for line in f:
+                    key, value = line.split("\t")
+
+                    if dual_file:
+                        if load_fast and not key.startswith(SLOW_PREFIX):
+                            settings[key] = int(value)
+                        elif not load_fast and key.startswith(SLOW_PREFIX):
+                            settings[key[len(SLOW_PREFIX):]] = int(value)
+                    else:
+                        settings[key] = int(value)
+
+                self._register_area.load_settings(settings)
+
+        except Exception as e:
+            msg = 'An error occurred while trying to load settings from "{}": {}'.\
+                format(filename, e)
+            QtG.QMessageBox.warning(self, 'EVIL – Could not load settings', msg)
+
+    def _save_settings(self):
         filename = QtG.QFileDialog.getSaveFileName(self, directory="unnamed.evf",
                                                    filter="EVIL file (*.evf);;All files(*)")
-        with open(filename, 'w') as f:
-            f.write("EVILfile\t%s\n" % GUI_VERSION)
-            for name, setting in self.settings.items():
-                line = name + "\t" + str(setting.value()) + "\n"
-                f.write(line)
+        if not filename:
+            return
+
+        try:
+            with open(filename, 'w') as f:
+                f.write("EVILfile\t%s\n" % GUI_VERSION)
+                settings = self._register_area.save_settings()
+                for key, value in settings.items():
+                    line = key + "\t" + str(value) + "\n"
+                    f.write(line)
+        except Exception as e:
+            msg = 'An error occurred while trying to save settings to "{}": {}'.format(filename, e)
+            QtG.QMessageBox.warning(self, 'EVIL – Could not save settings', msg)
 
     # noinspection PyUnusedLocal
     def closeEvent(self, event):
