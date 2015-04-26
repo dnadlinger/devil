@@ -27,6 +27,7 @@ class DeviceList(QtG.QWidget):
         # We need to keep a reference to the object around as connecting to a
         # signal only creates a weak references.
         self.channels.append(channel)
+        self.channels.sort(key=lambda a: a.resource.display_name)
         channel.connection_ready.connect(lambda: self._display_channel(channel))
         channel.shutting_down.connect(lambda: self._remove_channel(channel))
 
@@ -55,6 +56,8 @@ class DeviceList(QtG.QWidget):
         open_button = QtG.QPushButton('Control Panel')
         open_button.clicked.connect(channel.show_control_panel)
         tw.setCellWidget(row, 4, open_button)
+
+        tw.sortItems(0)
 
     def _remove_channel(self, channel):
         idx = self.channels.index(channel)
