@@ -97,7 +97,7 @@ class Evil2RegisterArea(QtG.QWidget):
         self.resetPidButton.clicked.connect(self.pid_reset)
         self.relockingEnabledCheckBox.clicked.connect(self.toggle_relocking)
         self.thresholdSpinBox.valueChanged.connect(
-            self.emit_extra_plot_items_changed)
+            self._emit_extra_plot_items_changed)
 
     def load_settings(self, settings):
         for key, value in settings.items():
@@ -132,7 +132,7 @@ class Evil2RegisterArea(QtG.QWidget):
             self.sweepButton.setText('Controlling')
             self.sweepButton.setStyleSheet('QPushButton {color: blue}')
 
-    def emit_extra_plot_items_changed(self, value):
+    def _emit_extra_plot_items_changed(self, value):
         value = {3: {'threshold': value}}
         self.extra_plot_items_changed.emit(value)
 

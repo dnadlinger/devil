@@ -20,17 +20,20 @@ class ControlPanel(QtG.QWidget):
         loadUi('ui/controlpanel.ui', self)
         self.setWindowTitle(channel_name + ' – EVIL')
 
-        self.stream_save_file = None
+        self._stream_save_file = None
 
         self.loadButton.clicked.connect(self._load_settings)
         self.saveButton.clicked.connect(self._save_settings)
-        self.streamSnapshotFileButton.clicked.connect(self._choose_stream_snapshot_file)
+        self.streamSnapshotFileButton.clicked.connect(
+            self._choose_stream_snapshot_file)
 
         self.streamSnapshotButton.setIcon(QtG.QIcon('ui/images/shot.png'))
         self.streamSnapshotButton.clicked.connect(self._save_stream_snapshot)
 
-        self.acquireTimeSpinBox.valueChanged.connect(self._update_stream_acquisition_config)
-        self.acquirePointsSpinBox.valueChanged.connect(self._update_stream_acquisition_config)
+        self.acquireTimeSpinBox.valueChanged.connect(
+            self._update_stream_acquisition_config)
+        self.acquirePointsSpinBox.valueChanged.connect(
+            self._update_stream_acquisition_config)
 
         # these are things that are added to the plot of a particular streaming channel
         # e.g. the threshold line to the filtered difference streaming channel
@@ -47,7 +50,8 @@ class ControlPanel(QtG.QWidget):
         self.registerAreaLayout.addWidget(register_area)
 
         self._extra_plot_items = {}
-        register_area.extra_plot_items_changed.connect(self._set_extra_plot_items)
+        register_area.extra_plot_items_changed.connect(
+            self._set_extra_plot_items)
 
     def active_stream_channels(self):
         return [v.channel for v in self._streaming_views]
@@ -74,8 +78,8 @@ class ControlPanel(QtG.QWidget):
 
     def closeEvent(self, event):
         self.closed.emit()
-        if self.stream_save_file is not None:
-            self.stream_save_file.close()
+        if self._stream_save_file is not None:
+            self._stream_save_file.close()
 
         QtG.QWidget.closeEvent(self, event)
 
@@ -96,26 +100,32 @@ class ControlPanel(QtG.QWidget):
     def _choose_stream_snapshot_file(self):
         filename = QtG.QFileDialog.getSaveFileName(self, directory='unnamed.evl',
                                                    filter='EVIL logfile (*.evl);;All files(*)')
+        if not filename:
+            return
+
         try:
-            if self.stream_save_file is not None:
-                self.stream_save_file.close()
-            self.stream_save_file = open(filename, 'wb')
+            if self._stream_save_file is not None:
+                self._stream_save_file.close()
+            self._stream_save_file = open(filename, 'wb')
+            self.streamSnapshotButton.setEnabled(True)
         except Exception as e:
-            QtC.qCritical('Could not open streaming data file: {}'.format(e))
+            self.streamSnapshotButton.setEnabled(False)
+            QtG.QMessageBox.warning(self, 'EVIL – Could not open stream data '
+                                    'file', str(e))
 
     def _save_stream_snapshot(self):
-        stream_data = [v.current_stream_data for v in self._streaming_views]
+        stream_data = [v.current_data() for v in self._streaming_views]
         if len(self._streaming_views) == 1:
             # Save a one-dimensional array if only one streaming channel is
             # active for backwards compatibility.
-            np.save(self.stream_save_file, stream_data[0])
+            np.save(self._stream_save_file, stream_data[0])
         else:
             max_len = max([len(s) for s in stream_data])
 
             data = np.zeros((len(self._streaming_views), max_len))
             for i, d in enumerate(stream_data):
                 data[i, :len(d)] = d
-            np.save(self.stream_save_file, data)
+            np.save(self._stream_save_file, data)
 
     def add_streaming_view(self):
         """Adds a new streaming channel view."""
