@@ -112,7 +112,6 @@ class StreamPacket:
 class Channel(QtC.QObject):
     connection_ready = QtC.pyqtSignal()
     shutting_down = QtC.pyqtSignal()
-    streaming_params_changed = QtC.pyqtSignal()  # FIXME: Parameter type
 
     def __init__(self, zmq_ctx, host_addr, resource):
         QtC.QObject.__init__(self)
@@ -148,7 +147,7 @@ class Channel(QtC.QObject):
 
             self._control_panel.closed.connect(self._destroy_control_panel)
 
-            self._set_stream_acquisition_config(
+            self._control_panel.set_stream_acquisition_config(
                 *self._stream_acquisition_config)
             self._control_panel.stream_acquisition_config_changed.connect(
                 self._set_stream_acquisition_config)
