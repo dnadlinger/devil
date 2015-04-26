@@ -274,6 +274,10 @@ class Channel(QtC.QObject):
                 for s in self._active_stream_sockets.values():
                     s.close()
                 self._active_stream_sockets.clear()
+
+                if self._control_panel:
+                    self._control_panel.disconnected()
+
                 self.shutting_down.emit()
                 return
 

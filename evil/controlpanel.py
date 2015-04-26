@@ -21,7 +21,6 @@ class ControlPanel(QtG.QWidget):
         self.setWindowTitle(channel_name + ' – EVIL')
 
         self.stream_save_file = None
-        self.current_stream_data = None
 
         self.loadButton.clicked.connect(self._load_settings)
         self.saveButton.clicked.connect(self._save_settings)
@@ -66,13 +65,19 @@ class ControlPanel(QtG.QWidget):
         for v in self._streaming_views:
             v.got_packet(packet)
 
-    def hideEvent(self, event):
-        # Note: For whatever reason, closeEvent() does not get called on these
-        # windows, only on the first created one (?), i.e. the device list.
-        # Thus, we use hideEvent instead(), which is equivalent for our purposes
-        # anyway.
+    def disconnected(self):
+        self.errorConditionLabel.setText('(connection lost)')
+
+        self._set_layout_enabled(self.leftSideLayout, False)
+        self._set_layout_enabled(self.streamingLayout, False)
+        self.saveButton.setEnabled(True)
+
+    def closeEvent(self, event):
         self.closed.emit()
-        QtG.QWidget.hideEvent(self, event)
+        if self.stream_save_file is not None:
+            self.stream_save_file.close()
+
+        QtG.QWidget.closeEvent(self, event)
 
     def set_stream_acquisition_config(self, time_span_seconds, points):
         self.acquireTimeSpinBox.setValue(time_span_seconds * 1000)
@@ -219,7 +224,12 @@ class ControlPanel(QtG.QWidget):
             msg = 'An error occurred while trying to save settings to "{}": {}'.format(filename, e)
             QtG.QMessageBox.warning(self, 'EVIL – Could not save settings', msg)
 
-    # noinspection PyUnusedLocal
-    def closeEvent(self, event):
-        if self.stream_save_file is not None:
-            self.stream_save_file.close()
+    def _set_layout_enabled(self, layout, enabled):
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            if item.widget():
+                item = item.widget()
+            if item.layout():
+                self._set_layout_enabled(item.layout(), enabled)
+            elif getattr(item, 'setEnabled', None):
+                item.setEnabled(enabled)
