@@ -112,6 +112,7 @@ class StreamPacket:
 class Channel(QtC.QObject):
     connection_ready = QtC.pyqtSignal()
     shutting_down = QtC.pyqtSignal()
+    main_stream_packet_received = QtC.pyqtSignal(StreamPacket)
 
     def __init__(self, zmq_ctx, host_addr, resource):
         QtC.QObject.__init__(self)
@@ -171,9 +172,13 @@ class Channel(QtC.QObject):
     def _registers(self):
         return []
 
+    def _main_stream_idx(self):
+        raise NotImplementedError('Need to designate one main stream for this '
+                                  'specific EVIL version')
+
     def _create_control_panel(self):
         raise NotImplementedError(
-            'Need to implement control panel for specific EVIL version')
+            'Need to implement control panel for this specific EVIL version')
 
     def _destroy_control_panel(self):
         self._control_panel.deleteLater()
@@ -195,6 +200,7 @@ class Channel(QtC.QObject):
 
     def _got_stream_ports(self, ports):
         self._stream_ports = ports
+        self._update_stream_subscriptions()
 
         # Initialize registers.
         regs = self._registers()
@@ -208,8 +214,10 @@ class Channel(QtC.QObject):
                              self._read_stream_acquisition_config)
 
     def _update_stream_subscriptions(self):
-        new_active = set(
-            self._control_panel.active_stream_channels()) if self._control_panel else set()
+        new_active = set([self._main_stream_idx()])
+        if self._control_panel:
+            new_active += self._control_panel.active_stream_channels()
+
         old_active = set(self._active_stream_sockets.keys())
 
         for to_close in old_active - new_active:
@@ -309,6 +317,8 @@ class Channel(QtC.QObject):
             packet = StreamPacket(stream_idx, interval, trigger, sample_type,
                                   sample_buffer)
 
+            if stream_idx == self._main_stream_idx():
+                self.main_stream_packet_received.emit(packet)
             if self._control_panel:
                 self._control_panel.got_stream_packet(packet)
         except Exception as e:

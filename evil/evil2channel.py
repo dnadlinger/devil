@@ -56,6 +56,11 @@ class Evil2Channel(Channel):
         regs.append(self._system_control_reg)
         return regs
 
+    def _main_stream_idx(self):
+        # The error signal is what is most important to display in the
+        # dashboard, etc.
+        return 0
+
     def _create_control_panel(self):
         reg_area = Evil2RegisterArea(self._system_control_reg, self._widget_name_to_reg)
 

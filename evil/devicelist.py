@@ -1,7 +1,7 @@
 from PyQt4 import QtCore as QtC
 from PyQt4 import QtGui as QtG
 from PyQt4.uic import loadUi
-
+from evil.dashboard import Dashboard
 
 HEADER_SETTING = 'device_list_header'
 IN_DASHBOARD_SETTINGS = 'show_in_dashboard/'
@@ -20,8 +20,11 @@ class DeviceList(QtG.QWidget):
                 s.value(HEADER_SETTING))
 
         self.forceRescanButton.clicked.connect(self.force_rescan)
+        self.openDashboardButton.clicked.connect(self._open_dashboard)
 
         self.channels = []
+
+        self._dashboard = None
 
     def register(self, channel):
         # We need to keep a reference to the object around as connecting to a
@@ -30,6 +33,9 @@ class DeviceList(QtG.QWidget):
         self.channels.sort(key=lambda a: a.resource.display_name)
         channel.connection_ready.connect(lambda: self._display_channel(channel))
         channel.shutting_down.connect(lambda: self._remove_channel(channel))
+
+        if self._dashboard:
+            self._dashboard.add_channel(channel)
 
     def closeEvent(self, event):
         state = self.deviceTableWidget.horizontalHeader().saveState()
@@ -71,3 +77,15 @@ class DeviceList(QtG.QWidget):
     def _save_dashboard_state(self, dev_id, val):
         s = QtC.QSettings()
         s.setValue(IN_DASHBOARD_SETTINGS + dev_id, val)
+
+    def _open_dashboard(self):
+        if not self._dashboard:
+            self._dashboard = Dashboard()
+            for c in self.channels:
+                if self._load_dashboard_state(c.resource.dev_id):
+                    self._dashboard.add_channel(c)
+            self._dashboard.closed.connect(self._dashboard_closed)
+            self._dashboard.show()
+
+    def _dashboard_closed(self):
+        self._dashboard = None
