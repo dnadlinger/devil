@@ -54,6 +54,7 @@ class Evil2Channel(Channel):
     def _registers(self):
         regs = list(self._widget_name_to_reg.values())
         regs.append(self._system_control_reg)
+        regs.append(self._system_condition_reg)
         return regs
 
     def _main_stream_idx(self):
@@ -72,7 +73,7 @@ class Evil2Channel(Channel):
         return c
 
     def _update_error_conditions(self):
-        self._current_error_conditions = [e for m, e in self._cond_mask_to_error
+        self._current_error_conditions = [e for m, e in self._cond_mask_to_error.items()
                                           if self._system_condition_reg.sval & m]
         self.error_conditions_changed.emit(self._current_error_conditions)
 
