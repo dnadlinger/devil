@@ -216,7 +216,7 @@ class Channel(QtC.QObject):
     def _update_stream_subscriptions(self):
         new_active = set([self._main_stream_idx()])
         if self._control_panel:
-            new_active += self._control_panel.active_stream_channels()
+            new_active |= set(self._control_panel.active_stream_channels())
 
         old_active = set(self._active_stream_sockets.keys())
 
