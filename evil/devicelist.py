@@ -85,7 +85,10 @@ class DeviceList(QtG.QWidget):
                 if self._load_dashboard_state(c.resource.dev_id):
                     self._dashboard.add_channel(c)
             self._dashboard.closed.connect(self._dashboard_closed)
-            self._dashboard.show()
+            if self.dashboardFullscreenBox.isChecked():
+                self._dashboard.showFullScreen()
+            else:
+                self._dashboard.show()
 
     def _dashboard_closed(self):
         self._dashboard = None
