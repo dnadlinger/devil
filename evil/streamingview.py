@@ -28,7 +28,7 @@ class StreamingView(QtG.QWidget):
         self.removeViewButton.clicked.connect(self.removed)
 
         pi = self.plotWidget.getPlotItem()
-        pi.setRange(xRange=(0, 1), yRange=(-512, 512), padding = 0)
+        pi.setRange(xRange=(0, 1), yRange=(-513, 513), padding = 0)
         pi.setLabel('bottom', 'time', 's')
         self._plot_curve = pi.plot(antialias=True)
 
