@@ -19,6 +19,7 @@ class Dashboard(QtG.QMainWindow):
 
     def add_channel(self, channel):
         self._channels.append(channel)
+        channel.shutting_down.connect(self._remove_sending_channel)
         self._relayout()
 
         channel.main_stream_packet_received.connect(self._got_stream_packet)
@@ -29,10 +30,15 @@ class Dashboard(QtG.QMainWindow):
     def closeEvent(self, event):
         self.closed.emit()
 
+    def _remove_sending_channel(self):
+        self._channels.remove(self.sender())
+        self._relayout()
+
     def _relayout(self):
         self._channels.sort(key=lambda a: a.resource.display_name)
 
-        self._view.ci.clear()
+        self._view.clear()
+        self._channel_curve_map.clear()
 
         window_aspect = self.width() / self.height()
         target_aspect = 1
@@ -55,7 +61,7 @@ class Dashboard(QtG.QMainWindow):
                 plot.hideButtons()
                 plot.hideAxis('left')
                 plot.hideAxis('bottom')
-                plot.setRange(yRange=(-512, 512), padding=0)
+                plot.setRange(yRange=(-513, 513), padding=0)
 
                 # TODO: Update plot.titleLabel background based on state.
 
