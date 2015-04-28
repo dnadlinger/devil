@@ -74,7 +74,7 @@ class Node(QtC.QObject):
 
     def broadcast_enumeration_request(self):
         msg = msgpack.packb((MSGPACKRPC_NOTIFICATION, 'enumerate', ()))
-        self._socket.writeDatagram(msg, QtN.QHostAddress.Broadcast, self.port)
+        self._socket.writeDatagram(msg, QtN.QHostAddress('172.31.91.255'), self.port)
 
     def _read_packet(self):
         while self._socket.hasPendingDatagrams():
