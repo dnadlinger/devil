@@ -8,6 +8,7 @@ IN_DASHBOARD_SETTINGS = 'show_in_dashboard/'
 
 
 class DeviceList(QtG.QWidget):
+    closed = QtC.pyqtSignal()
     force_rescan = QtC.pyqtSignal()
 
     def __init__(self):
@@ -40,6 +41,8 @@ class DeviceList(QtG.QWidget):
     def closeEvent(self, event):
         state = self.deviceTableWidget.horizontalHeader().saveState()
         QtC.QSettings().setValue(HEADER_SETTING, state)
+
+        self.closed.emit()
 
     def _display_channel(self, channel):
         tw = self.deviceTableWidget
