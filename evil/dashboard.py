@@ -83,6 +83,16 @@ class Dashboard(QtG.QMainWindow):
                 plot.hideAxis('bottom')
                 plot.setRange(yRange=(-513, 513), padding=0)
 
+                # Disable the default pyqtgraph context menu entries, except for
+                # the export option. Note: It is not clear whether these are
+                # supposed to be public APIs, so this might stop working when
+                # pyqtgraph is updated.
+                plot.setMenuEnabled(False, None)
+                plot.vb.menu.clear()
+
+                panel_action = plot.vb.menu.addAction('Control Panel...')
+                panel_action.triggered.connect(channel.show_control_panel)
+
                 # TODO: Update plot.titleLabel background based on state.
 
                 curve = pg.PlotCurveItem(antialias=True)
