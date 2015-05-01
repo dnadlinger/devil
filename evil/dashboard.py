@@ -47,6 +47,7 @@ class Dashboard(QtG.QMainWindow):
         target_aspect = 1
 
         cols = round(sqrt(len(self._channels) * window_aspect / target_aspect))
+        cols = min(cols, len(self._channels))
 
         last_row = len(self._channels) % cols
         if last_row == 0:
@@ -76,7 +77,7 @@ class Dashboard(QtG.QMainWindow):
 
         col_width = self.width() / cols
         for i in range(cols):
-            self._view.ci.layout.setColumnMaximumWidth(i, col_width)
+            self._view.ci.layout.setColumnPreferredWidth(i, col_width)
 
     def _got_stream_packet(self, packet):
         curve = self._channel_curve_map[self.sender()]
