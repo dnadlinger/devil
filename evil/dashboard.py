@@ -40,6 +40,9 @@ class Dashboard(QtG.QMainWindow):
         self._view.clear()
         self._channel_curve_map.clear()
 
+        if not self._channels:
+            return
+
         window_aspect = self.width() / self.height()
         target_aspect = 1
 
