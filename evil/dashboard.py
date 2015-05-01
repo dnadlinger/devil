@@ -33,6 +33,15 @@ class Dashboard(QtG.QMainWindow):
             if state & QtC.Qt.WindowMaximized:
                 self.setWindowState(state & ~QtC.Qt.WindowMaximized |
                                     QtC.Qt.WindowFullScreen)
+        QtG.QMainWindow.changeEvent(self, event)
+
+    def keyPressEvent(self, event):
+        if event.key() & QtC.Qt.Key_Escape:
+            state = self.windowState()
+            if state & QtC.Qt.WindowFullScreen:
+                self.setWindowState(state & ~QtC.Qt.WindowFullScreen)
+                return
+        QtG.QMainWindow.keyPressEvent(self, event)
 
     def closeEvent(self, event):
         self.closed.emit()
