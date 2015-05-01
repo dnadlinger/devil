@@ -18,15 +18,20 @@ if __name__ == '__main__':
     app = QtG.QApplication(sys.argv)
 
     shared_mem = QtC.QSharedMemory('tiqi.evil.client.isStarted')
-    if not shared_mem.create(
-            1) and shared_mem.error() == QtC.QSharedMemory.AlreadyExists:
+    if not shared_mem.create(1) and\
+            shared_mem.error() == QtC.QSharedMemory.AlreadyExists:
         error_msg = QtG.QMessageBox(QtG.QMessageBox.Warning,
                                     'EVIL Client already running',
                                     'Another instance of the EVIL client '
                                     'software is already running on your'
-                                    'system. Please close it first.')
-        error_msg.exec_()
-        sys.exit(1)
+                                    'system. On Windows, this might cause '
+                                    'network devices not to be discovered '
+                                    'properly. Do you want to continue?',
+                                    QtG.QMessageBox.Yes |
+                                    QtG.QMessageBox.No)
+        error_msg.setDefaultButton(QtG.QMessageBox.No)
+        if error_msg.exec_() == QtG.QMessageBox.No:
+            sys.exit(1)
 
     zmq_ctx = zmq.Context()
 
