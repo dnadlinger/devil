@@ -42,7 +42,8 @@ class Resource:
                                                self.display_name, self.port)
 
 
-def resource_from_tuple(dev_type, dev_id, display_name, version, port):
+def resource_from_tuple(dev_type, dev_id, display_name, version, port,
+                        *ignore_reserved):
     return Resource(dev_type, dev_id, display_name, SemVer(*version), port)
 
 
