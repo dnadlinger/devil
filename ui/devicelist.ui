@@ -100,13 +100,6 @@
       </spacer>
      </item>
      <item>
-      <widget class="QCheckBox" name="dashboardFullscreenBox">
-       <property name="text">
-        <string>Fullscreen</string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QPushButton" name="openDashboardButton">
        <property name="text">
         <string>Open Dashboard</string>

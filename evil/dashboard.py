@@ -27,6 +27,13 @@ class Dashboard(QtG.QMainWindow):
     def resizeEvent(self, event):
         self._relayout()
 
+    def changeEvent(self, event):
+        if event.type() == QtC.QEvent.WindowStateChange:
+            state = self.windowState()
+            if state & QtC.Qt.WindowMaximized:
+                self.setWindowState(state & ~QtC.Qt.WindowMaximized |
+                                    QtC.Qt.WindowFullScreen)
+
     def closeEvent(self, event):
         self.closed.emit()
 
