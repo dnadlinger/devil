@@ -14,7 +14,6 @@ MSGPACK_EXT_INT8ARRAY = 1
 
 class Register(QtC.QObject):
     changed_locally = QtC.pyqtSignal(int, int)
-    changed_remotely = QtC.pyqtSignal(int)
 
     # Catch-all for both local and remote changes.
     changed = QtC.pyqtSignal(int)
@@ -60,13 +59,11 @@ class Register(QtC.QObject):
             self._remote_updates_to_ignore.clear()
             if new_uval != self._uval:
                 self._uval = new_uval
-                self.changed_remotely.emit(self.sval)
                 self.changed.emit(self.sval)
 
     def set_from_remote_query(self, new_uval):
         self._uval = new_uval
         self._synchronized = True
-        self.changed_remotely.emit(self.sval)
         self.changed.emit(self.sval)
 
     def mark_as_desynchronized(self):
@@ -158,6 +155,11 @@ class Channel(QtC.QObject):
             self._update_stream_subscriptions()
 
             self._control_panel.show()
+
+    def unlock(self):
+        raise NotImplementedError('Need to implement function that unlocks '
+                                  'the controller for this specific channel '
+                                  'type.')
 
     def _set_stream_acquisition_config(self, time_span_seconds, points):
         config = time_span_seconds, points

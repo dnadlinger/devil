@@ -93,6 +93,9 @@ class Dashboard(QtG.QMainWindow):
                 panel_action = plot.vb.menu.addAction('Control Panel...')
                 panel_action.triggered.connect(channel.show_control_panel)
 
+                unlock_action = plot.vb.menu.addAction('Unlock')
+                unlock_action.triggered.connect(channel.unlock)
+
                 # TODO: Update plot.titleLabel background based on state.
 
                 curve = pg.PlotCurveItem(antialias=True)

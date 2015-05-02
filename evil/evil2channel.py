@@ -30,8 +30,7 @@ class Evil2Channel(Channel):
         self._system_control_reg = Register(0)
 
         self._system_condition_reg = Register(30)
-        self._system_condition_reg.changed_remotely.connect(
-            self._update_error_conditions)
+        self._system_condition_reg.changed.connect(self._update_error_conditions)
         self._cond_mask_to_error = {
             0b1: ErrorCondition('ADC_OVER', 'Analog input out of range')
         }
@@ -50,6 +49,11 @@ class Evil2Channel(Channel):
             'thresholdSpinBox': Register(10),
             'ttlExpSpinBox': Register(11)
         }
+
+    def unlock(self):
+        self._widget_name_to_reg['rangeSpinBox'].set_from_local_change(0)
+        self._system_control_reg.set_from_local_change(
+            (self._system_control_reg.sval &~SWEEPING_MASK) | SWEEPING_STATE)
 
     def _registers(self):
         regs = list(self._widget_name_to_reg.values())
@@ -94,7 +98,7 @@ class Evil2RegisterArea(QtG.QWidget):
         for widget_name, register in register_name_map.items():
             self._widgets_to_save.append(widget_name)
             widget = getattr(self, widget_name)
-            register.changed_remotely.connect(widget.setValue)
+            register.changed.connect(widget.setValue)
             widget.setValue(register.sval)
             widget.valueChanged.connect(register.set_from_local_change)
 
