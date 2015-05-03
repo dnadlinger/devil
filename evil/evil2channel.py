@@ -22,19 +22,16 @@ class Evil2Channel(Channel):
         'Relocking filter difference'
     ]
 
-    error_conditions_changed = QtC.pyqtSignal(list)
-
     def __init__(self, zmq_ctx, host_addr, resource):
         Channel.__init__(self, zmq_ctx, host_addr, resource)
 
         self._system_control_reg = Register(0)
 
         self._system_condition_reg = Register(30)
-        self._system_condition_reg.changed.connect(self._update_error_conditions)
+        self._system_condition_reg.changed.connect(self._condition_reg_changed)
         self._cond_mask_to_error = {
             0b1: ErrorCondition('ADC_OVER', 'Analog input out of range')
         }
-        self._current_error_conditions = []
 
         self._widget_name_to_reg = {
             'centerSpinBox': Register(1, True),
@@ -55,6 +52,10 @@ class Evil2Channel(Channel):
         self._system_control_reg.set_from_local_change(
             (self._system_control_reg.sval & ~SWEEPING_MASK) | SWEEPING_STATE)
 
+    def current_error_conditions(self):
+        return [e for m, e in self._cond_mask_to_error.items()
+                if self._system_condition_reg.sval & m]
+
     def _registers(self):
         regs = list(self._widget_name_to_reg.values())
         regs.append(self._system_control_reg)
@@ -66,16 +67,13 @@ class Evil2Channel(Channel):
 
         c = ControlPanel(self.resource.display_name, self.STREAM_NAMES,
                          reg_area)
-        c.set_error_conditions(self._current_error_conditions)
+        c.set_error_conditions(self.current_error_conditions())
         self.error_conditions_changed.connect(c.set_error_conditions)
 
         return c
 
-    def _update_error_conditions(self):
-        self._current_error_conditions = [e for m, e in self._cond_mask_to_error.items()
-                                          if self._system_condition_reg.sval & m]
-        self.error_conditions_changed.emit(self._current_error_conditions)
-
+    def _condition_reg_changed(self):
+        self.error_conditions_changed.emit(self.current_error_conditions())
 
 class Evil2RegisterArea(QtG.QWidget):
     extra_plot_items_changed = QtC.pyqtSignal(dict)

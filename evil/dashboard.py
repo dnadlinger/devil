@@ -31,9 +31,12 @@ class Dashboard(QtG.QMainWindow):
 
         self._channels = []
         self._channel_curve_map = {}
+        self._channel_condition_text_map = {}
 
     def add_channel(self, channel):
         channel.shutting_down.connect(self._channel_shutting_down)
+        channel.error_conditions_changed.connect(
+            self._channel_conditions_changed)
         channel.stream_packet_received.connect(self._got_stream_packet)
         channel.add_stream_subscription(STREAM_IDX_TO_DISPLAY)
 
@@ -42,6 +45,8 @@ class Dashboard(QtG.QMainWindow):
 
     def remove_channel(self, channel):
         channel.shutting_down.disconnect(self._channel_shutting_down)
+        channel.error_conditions_changed.disconnect(
+            self._channel_conditions_changed)
         channel.stream_packet_received.disconnect(self._got_stream_packet)
         channel.remove_stream_subscription(STREAM_IDX_TO_DISPLAY)
 
@@ -80,6 +85,7 @@ class Dashboard(QtG.QMainWindow):
 
         self._view.clear()
         self._channel_curve_map.clear()
+        self._channel_condition_text_map.clear()
 
         if not self._channels:
             return
@@ -99,37 +105,7 @@ class Dashboard(QtG.QMainWindow):
             for channel in row:
                 if not channel:
                     break
-
-                plot = self._view.addPlot(
-                    title=channel.resource.display_name)
-                plot.setMouseEnabled(False, False)
-                plot.hideButtons()
-                plot.hideAxis('left')
-                plot.hideAxis('bottom')
-                plot.setRange(yRange=(-513, 513), padding=0)
-
-                # Disable the default pyqtgraph context menu entries, except for
-                # the export option. Note: It is not clear whether these are
-                # supposed to be public APIs, so this might stop working when
-                # pyqtgraph is updated.
-                plot.setMenuEnabled(False, None)
-                plot.vb.menu.clear()
-
-                panel_action = plot.vb.menu.addAction('Open Control Panel...')
-                panel_action.triggered.connect(channel.show_control_panel)
-
-                unlock_action = plot.vb.menu.addAction('Unlock')
-                unlock_action.triggered.connect(channel.unlock)
-
-                hide_action = plot.vb.menu.addAction('Hide from Dashboard')
-                hide_action.triggered.connect(lambda *args, c=channel:
-                                              self.hide_channel.emit(c))
-
-                # TODO: Update plot.titleLabel background based on state.
-
-                curve = pg.PlotCurveItem(antialias=True)
-                plot.addItem(curve)
-                self._channel_curve_map[channel] = curve
+                self._add_plot_for_channel(channel)
 
             self._view.nextRow()
 
@@ -137,11 +113,59 @@ class Dashboard(QtG.QMainWindow):
         for i in range(cols):
             self._view.ci.layout.setColumnPreferredWidth(i, col_width)
 
+    def _add_plot_for_channel(self, channel):
+        plot = self._view.addPlot(
+            title=channel.resource.display_name)
+        plot.setMouseEnabled(False, False)
+        plot.hideButtons()
+        plot.hideAxis('left')
+        plot.hideAxis('bottom')
+        plot.setRange(yRange=(-513, 513), padding=0)
+
+        # Disable the default pyqtgraph context menu entries, except for
+        # the export option. Note: It is not clear whether these are
+        # supposed to be public APIs, so this might stop working when
+        # pyqtgraph is updated.
+        plot.setMenuEnabled(False, None)
+        plot.vb.menu.clear()
+
+        panel_action = plot.vb.menu.addAction('Open Control Panel...')
+        panel_action.triggered.connect(channel.show_control_panel)
+
+        unlock_action = plot.vb.menu.addAction('Unlock')
+        unlock_action.triggered.connect(channel.unlock)
+
+        hide_action = plot.vb.menu.addAction('Hide from Dashboard')
+        hide_action.triggered.connect(lambda *args, c=channel:
+                                      self.hide_channel.emit(c))
+
+        # TODO: Update plot.titleLabel background based on state.
+
+        curve = pg.PlotCurveItem(antialias=True)
+        plot.addItem(curve)
+        self._channel_curve_map[channel] = curve
+
+        text = pg.TextItem(html='')
+        plot.addItem(text)
+        text.setPos(0, 513)
+        self._channel_condition_text_map[channel] = text
+        self._update_condition_text(channel, channel.current_error_conditions())
+
     def _got_stream_packet(self, packet):
         if packet.stream_idx != STREAM_IDX_TO_DISPLAY:
             return
         curve = self._channel_curve_map[self.sender()]
         curve.setData(packet.samples)
 
+    def _channel_conditions_changed(self, conditions):
+        channel = self.sender()
+        self._update_condition_text(channel, conditions)
+
+    def _update_condition_text(self, channel, error_conditions):
+        text = '&nbsp;&nbsp;'.join(map(lambda e: e.short_name,
+                                       error_conditions))
+        self._channel_condition_text_map[channel].setHtml(
+            '<span style="color: red; font-weight: bold">' + text + '</span>')
+
     def _channel_shutting_down(self):
-        self._remove_channel(self.sender())
+        self.remove_channel(self.sender())

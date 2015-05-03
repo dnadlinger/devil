@@ -37,9 +37,6 @@ class DeviceList(QtG.QWidget):
         channel.connection_ready.connect(lambda: self._display_channel(channel))
         channel.shutting_down.connect(lambda: self._remove_channel(channel))
 
-        if self._dashboard:
-            self._dashboard.add_channel(channel)
-
     def closeEvent(self, event):
         state = self.deviceTableWidget.horizontalHeader().saveState()
         QtC.QSettings().setValue(HEADER_SETTING, state)
@@ -70,6 +67,9 @@ class DeviceList(QtG.QWidget):
         tw.setCellWidget(row, 4, open_button)
 
         tw.sortItems(0)
+
+        if self._dashboard:
+            self._dashboard.add_channel(channel)
 
     def _remove_channel(self, channel):
         idx = self.channels.index(channel)
