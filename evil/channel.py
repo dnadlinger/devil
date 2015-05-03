@@ -192,8 +192,11 @@ class Channel(QtC.QObject):
         self._stream_subscriber_count[stream_idx] -= 1
 
         if self._stream_subscriber_count[stream_idx] == 0:
-            self._active_stream_sockets[stream_idx].close()
-            del self._active_stream_sockets[stream_idx]
+            # Check whether we are still connected to make channel shutdown code
+            # less order-sensitive.
+            if stream_idx in self._active_stream_sockets:
+                self._active_stream_sockets[stream_idx].close()
+                del self._active_stream_sockets[stream_idx]
 
     def _set_stream_acquisition_config(self, time_span_seconds, points):
         config = time_span_seconds, points
