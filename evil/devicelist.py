@@ -25,6 +25,8 @@ class DeviceList(QtG.QWidget):
 
         self.channels = []
 
+        self._channel_in_dashboard_boxes = {}
+
         self._dashboard = None
 
     def register(self, channel):
@@ -57,9 +59,10 @@ class DeviceList(QtG.QWidget):
         tw.setItem(row, 2, QtG.QTableWidgetItem(str(channel.resource.version)))
 
         show_in_dashboard = QtG.QCheckBox()
-        show_in_dashboard.setChecked(self._load_dashboard_state(dev_id))
+        show_in_dashboard.setChecked(self._load_show_in_dashboard(dev_id))
         show_in_dashboard.stateChanged.connect(
-            lambda val: self._save_dashboard_state(dev_id, val))
+            lambda val: self._show_in_dashboard_changed(channel, val))
+        self._channel_in_dashboard_boxes[channel] = show_in_dashboard
         tw.setCellWidget(row, 3, show_in_dashboard)
 
         open_button = QtG.QPushButton('Control Panel')
@@ -72,23 +75,36 @@ class DeviceList(QtG.QWidget):
         idx = self.channels.index(channel)
         self.deviceTableWidget.removeRow(idx)
         self.channels.remove(channel)
+        del self._channel_in_dashboard_boxes[channel]
 
-    def _load_dashboard_state(self, dev_id):
-        s = QtC.QSettings()
-        return int(s.value(IN_DASHBOARD_SETTINGS + dev_id, 2))
-
-    def _save_dashboard_state(self, dev_id, val):
+    def _show_in_dashboard_changed(self, channel, new_val):
         s = QtC.QSettings()
         s.setValue(IN_DASHBOARD_SETTINGS + dev_id, val)
+
+        if self._dashboard:
+            if new_val == 2:
+                self._dashboard.add_channel(channel)
+            elif new_val == 0:
+                self._dashboard.remove_channel(channel)
+
+    def _load_show_in_dashboard(self, dev_id):
+        s = QtC.QSettings()
+        return int(s.value(IN_DASHBOARD_SETTINGS + dev_id, 2))
 
     def _open_dashboard(self):
         if not self._dashboard:
             self._dashboard = Dashboard()
             for c in self.channels:
-                if self._load_dashboard_state(c.resource.dev_id):
+                if self._load_show_in_dashboard(c.resource.dev_id):
                     self._dashboard.add_channel(c)
             self._dashboard.closed.connect(self._dashboard_closed)
+            self._dashboard.hide_channel.connect(self._hide_from_dashboard)
             self._dashboard.show()
+
+    def _hide_from_dashboard(self, channel):
+        checkbox = self._channel_in_dashboard_boxes.get(channel, None)
+        if checkbox:
+            checkbox.setChecked(0)
 
     def _dashboard_closed(self):
         self._dashboard = None

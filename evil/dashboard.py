@@ -6,6 +6,7 @@ import pyqtgraph as pg
 
 class Dashboard(QtG.QMainWindow):
     closed = QtC.pyqtSignal()
+    hide_channel = QtC.pyqtSignal(object)
 
     def __init__(self):
         QtG.QWidget.__init__(self)
@@ -19,10 +20,16 @@ class Dashboard(QtG.QMainWindow):
 
     def add_channel(self, channel):
         self._channels.append(channel)
-        channel.shutting_down.connect(self._remove_sending_channel)
+        channel.shutting_down.connect(lambda: self._remove_channel(
+            self.sender()))
         self._relayout()
 
         channel.main_stream_packet_received.connect(self._got_stream_packet)
+
+    def remove_channel(self, channel):
+        channel.main_stream_packet_received.disconnect(self._got_stream_packet)
+        self._channels.remove(channel)
+        self._relayout()
 
     def resizeEvent(self, event):
         self._relayout()
@@ -45,10 +52,6 @@ class Dashboard(QtG.QMainWindow):
 
     def closeEvent(self, event):
         self.closed.emit()
-
-    def _remove_sending_channel(self):
-        self._channels.remove(self.sender())
-        self._relayout()
 
     def _relayout(self):
         self._channels.sort(key=lambda a: a.resource.display_name)
@@ -90,11 +93,15 @@ class Dashboard(QtG.QMainWindow):
                 plot.setMenuEnabled(False, None)
                 plot.vb.menu.clear()
 
-                panel_action = plot.vb.menu.addAction('Control Panel...')
+                panel_action = plot.vb.menu.addAction('Open Control Panel...')
                 panel_action.triggered.connect(channel.show_control_panel)
 
                 unlock_action = plot.vb.menu.addAction('Unlock')
                 unlock_action.triggered.connect(channel.unlock)
+
+                hide_action = plot.vb.menu.addAction('Hide from Dashboard')
+                hide_action.triggered.connect(lambda *args, c=channel:
+                                              self.hide_channel.emit(c))
 
                 # TODO: Update plot.titleLabel background based on state.
 
