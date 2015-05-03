@@ -15,6 +15,16 @@ class Dashboard(QtG.QMainWindow):
     def __init__(self):
         QtG.QWidget.__init__(self)
 
+        settings = QtC.QSettings()
+
+        saved_geometry = settings.value("dashboard/geometry")
+        if saved_geometry:
+            self.restoreGeometry(saved_geometry)
+
+        stored_window_state = settings.value("dashboard/windowState")
+        if stored_window_state:
+            self.restoreState(stored_window_state)
+
         self.setWindowTitle('EVIL Dashboard')
         self._view = pg.GraphicsLayoutWidget()
         self.setCentralWidget(self._view)
@@ -58,7 +68,12 @@ class Dashboard(QtG.QMainWindow):
         QtG.QMainWindow.keyPressEvent(self, event)
 
     def closeEvent(self, event):
+        settings = QtC.QSettings()
+        settings.setValue("dashboard/geometry", self.saveGeometry())
+        settings.setValue("dashboard/windowState", self.saveState())
+
         self.closed.emit()
+        QtG.QMainWindow.closeEvent(self, event)
 
     def _relayout(self):
         self._channels.sort(key=lambda a: a.resource.display_name)
