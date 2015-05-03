@@ -79,7 +79,7 @@ class DeviceList(QtG.QWidget):
 
     def _show_in_dashboard_changed(self, channel, new_val):
         s = QtC.QSettings()
-        s.setValue(IN_DASHBOARD_SETTINGS + dev_id, val)
+        s.setValue(IN_DASHBOARD_SETTINGS + channel.resource.dev_id, new_val)
 
         if self._dashboard:
             if new_val == 2:

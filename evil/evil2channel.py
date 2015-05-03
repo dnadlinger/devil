@@ -53,18 +53,13 @@ class Evil2Channel(Channel):
     def unlock(self):
         self._widget_name_to_reg['rangeSpinBox'].set_from_local_change(0)
         self._system_control_reg.set_from_local_change(
-            (self._system_control_reg.sval &~SWEEPING_MASK) | SWEEPING_STATE)
+            (self._system_control_reg.sval & ~SWEEPING_MASK) | SWEEPING_STATE)
 
     def _registers(self):
         regs = list(self._widget_name_to_reg.values())
         regs.append(self._system_control_reg)
         regs.append(self._system_condition_reg)
         return regs
-
-    def _main_stream_idx(self):
-        # The error signal is what is most important to display in the
-        # dashboard, etc.
-        return 0
 
     def _create_control_panel(self):
         reg_area = Evil2RegisterArea(self._system_control_reg, self._widget_name_to_reg)

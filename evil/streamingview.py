@@ -4,10 +4,11 @@ from PyQt4 import QtGui as QtG
 from PyQt4.uic import loadUi
 from pyqtgraph.graphicsItems.InfiniteLine import InfiniteLine
 
+
 class StreamingView(QtG.QWidget):
     """A streaming plot view and associated controls."""
 
-    channel_changed = QtC.pyqtSignal()
+    channel_changed = QtC.pyqtSignal(int, int)
     removed = QtC.pyqtSignal()
 
     def __init__(self, channel_names, initial_channel=0):
@@ -18,11 +19,10 @@ class StreamingView(QtG.QWidget):
         for name in channel_names:
             self.streamingChannelComboBox.addItem(name)
         self.streamingChannelComboBox.setCurrentIndex(initial_channel)
+        self._current_channel = initial_channel
 
         self.streamingChannelComboBox.currentIndexChanged.connect(
-            self.channel_changed)
-        self.streamingChannelComboBox.currentIndexChanged.connect(
-            self._add_extra_items_from_dict)
+            self._change_channel)
 
         self.removeViewButton.setIcon(QtG.QIcon('ui/images/list-remove.png'))
         self.removeViewButton.clicked.connect(self.removed)
@@ -66,6 +66,12 @@ class StreamingView(QtG.QWidget):
     def set_extra_plot_items(self, extra_plot_items):
         self._extra_plot_items = extra_plot_items
         self._add_extra_items_from_dict()
+
+    def _change_channel(self, new_idx):
+        old_idx = self._current_channel
+        self._current_channel = new_idx
+        self._add_extra_items_from_dict()
+        self.channel_changed.emit(old_idx, new_idx)
 
     def _add_extra_items_from_dict(self):
         for item in self._displayed_extra_items:

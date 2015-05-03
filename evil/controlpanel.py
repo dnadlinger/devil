@@ -9,7 +9,8 @@ GUI_VERSION = 4.0
 
 class ControlPanel(QtG.QWidget):
     closed = QtC.pyqtSignal()
-    active_streams_changed = QtC.pyqtSignal()
+    stream_subscription_added = QtC.pyqtSignal(int)
+    stream_subscription_removed = QtC.pyqtSignal(int)
     stream_acquisition_config_changed = QtC.pyqtSignal(float, int)
 
     def __init__(self, channel_name, stream_names, register_area):
@@ -53,9 +54,6 @@ class ControlPanel(QtG.QWidget):
         register_area.extra_plot_items_changed.connect(
             self._set_extra_plot_items)
 
-    def active_stream_channels(self):
-        return [v.channel for v in self._streaming_views]
-
     def set_error_conditions(self, conds):
         l = self.errorConditionLabel
         if conds:
@@ -77,10 +75,13 @@ class ControlPanel(QtG.QWidget):
         self.saveButton.setEnabled(True)
 
     def closeEvent(self, event):
-        self.closed.emit()
         if self._stream_save_file is not None:
             self._stream_save_file.close()
 
+        for c in self.active_stream_channels():
+            self.stream_subscription_removed.emit(c)
+
+        self.closed.emit()
         QtG.QWidget.closeEvent(self, event)
 
     def set_stream_acquisition_config(self, time_span_seconds, points):
@@ -138,25 +139,32 @@ class ControlPanel(QtG.QWidget):
         self.streamingViewsLayout.addWidget(view)
         self._streaming_views.append(view)
 
-        view.channel_changed.connect(self.active_streams_changed)
+        view.channel_changed.connect(self._streaming_view_channel_changed)
         view.removed.connect(self._remove_streaming_view)
 
         view.set_extra_plot_items(self._extra_plot_items)
 
         self._update_streaming_view_buttons()
-        self.active_streams_changed.emit()
+        self.stream_subscription_added.emit(view.channel)
+
+    def active_stream_channels(self):
+        return [v.channel for v in self._streaming_views]
+
+    def _streaming_view_channel_changed(self, old, new):
+        self.stream_subscription_added.emit(new)
+        self.stream_subscription_removed.emit(old)
 
     def _remove_streaming_view(self):
         """Removes the sending streaming channel from the list."""
 
         assert len(self._streaming_views) > 1, 'Attempted to delete last streaming view'
-        c = self.sender()
-        self._streaming_views.remove(c)
-        self.streamingViewsLayout.removeWidget(c)
-        c.deleteLater()
+        v = self.sender()
+        self._streaming_views.remove(v)
+        self.streamingViewsLayout.removeWidget(v)
+        v.deleteLater()
 
         self._update_streaming_view_buttons()
-        self.active_streams_changed.emit()
+        self.stream_subscription_removed(v.channel)
 
     def _update_streaming_view_buttons(self):
         """(De)activates streaming channel add/remove buttons.

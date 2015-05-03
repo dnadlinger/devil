@@ -3,6 +3,10 @@ from PyQt4 import QtGui as QtG
 from math import sqrt
 import pyqtgraph as pg
 
+# Currently, we always display the stream with index 0 on the dashboard. This
+# could be made user-configurable in the future.
+STREAM_IDX_TO_DISPLAY = 0
+
 
 class Dashboard(QtG.QMainWindow):
     closed = QtC.pyqtSignal()
@@ -19,15 +23,18 @@ class Dashboard(QtG.QMainWindow):
         self._channel_curve_map = {}
 
     def add_channel(self, channel):
+        channel.shutting_down.connect(self._channel_shutting_down)
+        channel.stream_packet_received.connect(self._got_stream_packet)
+        channel.add_stream_subscription(STREAM_IDX_TO_DISPLAY)
+
         self._channels.append(channel)
-        channel.shutting_down.connect(lambda: self._remove_channel(
-            self.sender()))
         self._relayout()
 
-        channel.main_stream_packet_received.connect(self._got_stream_packet)
-
     def remove_channel(self, channel):
-        channel.main_stream_packet_received.disconnect(self._got_stream_packet)
+        channel.shutting_down.disconnect(self._channel_shutting_down)
+        channel.stream_packet_received.disconnect(self._got_stream_packet)
+        channel.remove_stream_subscription(STREAM_IDX_TO_DISPLAY)
+
         self._channels.remove(channel)
         self._relayout()
 
@@ -116,5 +123,10 @@ class Dashboard(QtG.QMainWindow):
             self._view.ci.layout.setColumnPreferredWidth(i, col_width)
 
     def _got_stream_packet(self, packet):
+        if packet.stream_idx != STREAM_IDX_TO_DISPLAY:
+            return
         curve = self._channel_curve_map[self.sender()]
         curve.setData(packet.samples)
+
+    def _channel_shutting_down(self):
+        self._remove_channel(self.sender())

@@ -109,7 +109,7 @@ class StreamPacket:
 class Channel(QtC.QObject):
     connection_ready = QtC.pyqtSignal()
     shutting_down = QtC.pyqtSignal()
-    main_stream_packet_received = QtC.pyqtSignal(StreamPacket)
+    stream_packet_received = QtC.pyqtSignal(StreamPacket)
 
     def __init__(self, zmq_ctx, host_addr, resource):
         QtC.QObject.__init__(self)
@@ -123,6 +123,11 @@ class Channel(QtC.QObject):
         self._active_stream_sockets = {}
 
         self._reg_idx_to_object = {}
+
+        # TODO: It would be a good idea to move the control panel handling out
+        # to e.g. DeviceList, so that this class is exclusively concerned with
+        # handling the actual communication and not any of the GUI
+        # representation.
         self._control_panel = None
 
         self._rpc_socket = qtzmq.Socket(zmq_ctx, zmq.REQ)
@@ -133,6 +138,7 @@ class Channel(QtC.QObject):
         self._rpc_socket.connect(self._remote_endpoint(resource.port))
 
         self._stream_ports = []
+        self._stream_subscriber_count = {}
         self._stream_acquisition_config = None
 
         self._invoke_rpc('notificationPort', [], self._got_notification_port)
@@ -145,14 +151,19 @@ class Channel(QtC.QObject):
 
             self._control_panel.closed.connect(self._destroy_control_panel)
 
+            self.stream_packet_received.connect(
+                self._control_panel.got_stream_packet)
             self._control_panel.set_stream_acquisition_config(
                 *self._stream_acquisition_config)
             self._control_panel.stream_acquisition_config_changed.connect(
                 self._set_stream_acquisition_config)
 
-            self._control_panel.active_streams_changed.connect(
-                self._update_stream_subscriptions)
-            self._update_stream_subscriptions()
+            self._control_panel.stream_subscription_added.connect(
+                self.add_stream_subscription)
+            for c in self._control_panel.active_stream_channels():
+                self.add_stream_subscription(c)
+            self._control_panel.stream_subscription_removed.connect(
+                self.remove_stream_subscription)
 
             self._control_panel.show()
 
@@ -160,6 +171,24 @@ class Channel(QtC.QObject):
         raise NotImplementedError('Need to implement function that unlocks '
                                   'the controller for this specific channel '
                                   'type.')
+
+    def add_stream_subscription(self, stream_idx):
+        old_count = self._stream_subscriber_count.get(stream_idx, 0)
+        self._stream_subscriber_count[stream_idx] = old_count + 1
+
+        if old_count == 0:
+            s = qtzmq.Socket(self._zmq_ctx, zmq.SUB)
+            s.received_msg.connect(
+                lambda msg: self._got_stream_packet(stream_idx, msg))
+            s.connect(self._remote_endpoint(self._stream_ports[stream_idx]))
+            self._active_stream_sockets[stream_idx] = s
+
+    def remove_stream_subscription(self, stream_idx):
+        self._stream_subscriber_count[stream_idx] -= 1
+
+        if self._stream_subscriber_count[stream_idx] == 0:
+            self._active_stream_sockets[stream_idx].close()
+            del self._active_stream_sockets[stream_idx]
 
     def _set_stream_acquisition_config(self, time_span_seconds, points):
         config = time_span_seconds, points
@@ -174,10 +203,6 @@ class Channel(QtC.QObject):
     def _registers(self):
         return []
 
-    def _main_stream_idx(self):
-        raise NotImplementedError('Need to designate one main stream for this '
-                                  'specific EVIL version')
-
     def _create_control_panel(self):
         raise NotImplementedError(
             'Need to implement control panel for this specific EVIL version')
@@ -185,8 +210,6 @@ class Channel(QtC.QObject):
     def _destroy_control_panel(self):
         self._control_panel.deleteLater()
         self._control_panel = None
-
-        self._update_stream_subscriptions()
 
     def _register_conflict(self, reg_idx):
         self._reg_idx_to_object[reg_idx].mark_as_desynchronized()
@@ -202,7 +225,6 @@ class Channel(QtC.QObject):
 
     def _got_stream_ports(self, ports):
         self._stream_ports = ports
-        self._update_stream_subscriptions()
 
         # Initialize registers.
         regs = self._registers()
@@ -214,24 +236,6 @@ class Channel(QtC.QObject):
 
         self._read_registers([r.idx for r in regs],
                              self._read_stream_acquisition_config)
-
-    def _update_stream_subscriptions(self):
-        new_active = set([self._main_stream_idx()])
-        if self._control_panel:
-            new_active |= set(self._control_panel.active_stream_channels())
-
-        old_active = set(self._active_stream_sockets.keys())
-
-        for to_close in old_active - new_active:
-            self._active_stream_sockets[to_close].close()
-            del self._active_stream_sockets[to_close]
-
-        for to_open in new_active - old_active:
-            s = qtzmq.Socket(self._zmq_ctx, zmq.SUB)
-            s.received_msg.connect(
-                lambda msg, idx=to_open: self._got_stream_packet(idx, msg))
-            s.connect(self._remote_endpoint(self._stream_ports[to_open]))
-            self._active_stream_sockets[to_open] = s
 
     def _read_registers(self, registers, completion_handler=None):
         if not registers:
@@ -319,10 +323,7 @@ class Channel(QtC.QObject):
             packet = StreamPacket(stream_idx, interval, trigger, sample_type,
                                   sample_buffer)
 
-            if stream_idx == self._main_stream_idx():
-                self.main_stream_packet_received.emit(packet)
-            if self._control_panel:
-                self._control_panel.got_stream_packet(packet)
+            self.stream_packet_received.emit(packet)
         except Exception as e:
             self._rpc_error('Error while handling stream packet: {}'.format(e))
 
