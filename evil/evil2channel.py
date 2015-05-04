@@ -121,6 +121,9 @@ class Evil2RegisterArea(QtG.QWidget):
         self.flipPolarityButton.clicked.connect(self.toggle_polarity)
         self.resetPidButton.clicked.connect(self.pid_reset)
         self.relockingEnabledCheckBox.clicked.connect(self.toggle_relocking)
+
+        self.inputOffsetSpinBox.valueChanged.connect(
+            self._emit_extra_plot_items_changed)
         self.thresholdSpinBox.valueChanged.connect(
             self._emit_extra_plot_items_changed)
 
@@ -157,8 +160,9 @@ class Evil2RegisterArea(QtG.QWidget):
             self.sweepButton.setText('Controlling')
             self.sweepButton.setStyleSheet('QPushButton {color: blue}')
 
-    def _emit_extra_plot_items_changed(self, value):
-        value = {3: {'threshold': value}}
+    def _emit_extra_plot_items_changed(self):
+        value = {0: {'offset': self.inputOffsetSpinBox.value()},
+                 3: {'threshold': self.thresholdSpinBox.value()}}
         self.extra_plot_items_changed.emit(value)
 
     def pid_reset(self):

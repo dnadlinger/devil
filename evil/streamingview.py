@@ -83,7 +83,13 @@ class StreamingView(QtG.QWidget):
 
             threshold = items.get('threshold')
             if threshold is not None:
-                self._displayed_extra_items.append(InfiniteLine(threshold, angle=0))
+                self._displayed_extra_items.append(
+                    InfiniteLine(threshold, angle=0))
+
+            offset = items.get('offset')
+            if offset is not None:
+                self._displayed_extra_items.append(
+                    InfiniteLine(-offset, angle=0))
 
         for item in self._displayed_extra_items:
             self.plotWidget.getPlotItem().addItem(item)
