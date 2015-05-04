@@ -1,6 +1,7 @@
 from PyQt4 import QtCore as QtC
 from PyQt4 import QtGui as QtG
 from math import sqrt
+from evil.channel import Channel
 import pyqtgraph as pg
 
 # Currently, we always display the stream with index 0 on the dashboard. This
@@ -32,11 +33,13 @@ class Dashboard(QtG.QMainWindow):
         self._channels = []
         self._channel_curve_map = {}
         self._channel_condition_text_map = {}
+        self._channel_name_label_map = {}
 
     def add_channel(self, channel):
         channel.shutting_down.connect(self._channel_shutting_down)
         channel.error_conditions_changed.connect(
             self._channel_conditions_changed)
+        channel.status_changed.connect(self._channel_status_changed)
         channel.stream_packet_received.connect(self._got_stream_packet)
         channel.add_stream_subscription(STREAM_IDX_TO_DISPLAY)
 
@@ -47,6 +50,7 @@ class Dashboard(QtG.QMainWindow):
         channel.shutting_down.disconnect(self._channel_shutting_down)
         channel.error_conditions_changed.disconnect(
             self._channel_conditions_changed)
+        channel.status_changed.disconnect(self._channel_status_changed)
         channel.stream_packet_received.disconnect(self._got_stream_packet)
         channel.remove_stream_subscription(STREAM_IDX_TO_DISPLAY)
 
@@ -86,6 +90,7 @@ class Dashboard(QtG.QMainWindow):
         self._view.clear()
         self._channel_curve_map.clear()
         self._channel_condition_text_map.clear()
+        self._channel_name_label_map.clear()
 
         if not self._channels:
             return
@@ -106,7 +111,13 @@ class Dashboard(QtG.QMainWindow):
                 if not channel:
                     break
                 self._add_plot_for_channel(channel)
+            self._view.nextRow()
 
+            for channel in row:
+                if not channel:
+                    break
+                self._add_name_for_channel(channel)
+                self._update_status_colors(channel, channel.current_status())
             self._view.nextRow()
 
         col_width = self.width() / cols
@@ -114,8 +125,7 @@ class Dashboard(QtG.QMainWindow):
             self._view.ci.layout.setColumnPreferredWidth(i, col_width)
 
     def _add_plot_for_channel(self, channel):
-        plot = self._view.addPlot(
-            title=channel.resource.display_name)
+        plot = self._view.addPlot()
         plot.setMouseEnabled(False, False)
         plot.hideButtons()
         plot.hideAxis('left')
@@ -139,8 +149,6 @@ class Dashboard(QtG.QMainWindow):
         hide_action.triggered.connect(lambda *args, c=channel:
                                       self.hide_channel.emit(c))
 
-        # TODO: Update plot.titleLabel background based on state.
-
         curve = pg.PlotCurveItem(antialias=True)
         plot.addItem(curve)
         self._channel_curve_map[channel] = curve
@@ -150,6 +158,11 @@ class Dashboard(QtG.QMainWindow):
         text.setPos(0, 513)
         self._channel_condition_text_map[channel] = text
         self._update_condition_text(channel, channel.current_error_conditions())
+
+    def _add_name_for_channel(self, channel):
+        label = LabelItemWithBg(text=channel.resource.display_name, bold=True)
+        self._channel_name_label_map[channel] = label
+        self._view.addItem(label)
 
     def _got_stream_packet(self, packet):
         if packet.stream_idx != STREAM_IDX_TO_DISPLAY:
@@ -167,5 +180,45 @@ class Dashboard(QtG.QMainWindow):
         self._channel_condition_text_map[channel].setHtml(
             '<span style="color: red; font-weight: bold">' + text + '</span>')
 
+    def _channel_status_changed(self, status):
+        self._update_status_colors(self.sender(), status)
+
+    def _update_status_colors(self, channel, status):
+        curve = self._channel_curve_map[channel]
+        label = self._channel_name_label_map[channel]
+
+        if status == Channel.Status.idle:
+            curve.setPen(pg.mkPen((128, 128, 128)))
+            label.setText(channel.resource.display_name, color=QtG.QColor(
+                128, 128, 128))
+            label.setBgColor(QtG.QColor(0, 0, 0))
+            return
+
+        curve.setPen(pg.mkPen((255, 255, 255)))
+        label.setText(channel.resource.display_name, color=QtG.QColor(
+            255, 255, 255))
+        if status == Channel.Status.configuring:
+            label.setBgColor(QtG.QColor(0, 128, 0))
+            return
+        if status == Channel.Status.running:
+            label.setBgColor(QtG.QColor(0, 0, 128))
+            return
+
     def _channel_shutting_down(self):
         self.remove_channel(self.sender())
+
+
+class LabelItemWithBg(pg.LabelItem):
+    def __init__(self, text=' ', parent=None, angle=0, **kwargs):
+        pg.LabelItem.__init__(self, text, parent, angle, **kwargs)
+
+        self._bg_color = QtG.QColor(0, 0, 0)
+
+    def setBgColor(self, color):
+        self._bg_color = color
+        self.update()
+
+    def paint(self, p, *args):
+        p.setPen(QtC.Qt.NoPen)
+        p.setBrush(QtG.QBrush(self._bg_color))
+        p.drawRect(self.rect())

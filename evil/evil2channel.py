@@ -47,6 +47,11 @@ class Evil2Channel(Channel):
             'ttlExpSpinBox': Register(11)
         }
 
+        self._current_status = Channel.Status.idle
+        self._system_control_reg.changed.connect(self._update_status)
+        self._widget_name_to_reg['rangeSpinBox'].changed.connect(self._update_status)
+        self._update_status()
+
     def unlock(self):
         self._widget_name_to_reg['rangeSpinBox'].set_from_local_change(0)
         self._system_control_reg.set_from_local_change(
@@ -55,6 +60,9 @@ class Evil2Channel(Channel):
     def current_error_conditions(self):
         return [e for m, e in self._cond_mask_to_error.items()
                 if self._system_condition_reg.sval & m]
+
+    def current_status(self):
+        return self._current_status
 
     def _registers(self):
         regs = list(self._widget_name_to_reg.values())
@@ -74,6 +82,20 @@ class Evil2Channel(Channel):
 
     def _condition_reg_changed(self):
         self.error_conditions_changed.emit(self.current_error_conditions())
+
+    def _update_status(self):
+        new_status = Channel.Status.running
+        if (self._system_control_reg.sval & SWEEPING_MASK) == SWEEPING_STATE:
+            if self._widget_name_to_reg['rangeSpinBox'].sval == 0:
+                new_status = Channel.Status.idle
+            else:
+                new_status = Channel.Status.configuring
+
+        if self._current_status == new_status:
+            return
+        self._current_status = new_status
+        self.status_changed.emit(new_status)
+
 
 class Evil2RegisterArea(QtG.QWidget):
     extra_plot_items_changed = QtC.pyqtSignal(dict)

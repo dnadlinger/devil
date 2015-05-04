@@ -1,8 +1,9 @@
-import qtzmq
 import msgpack
 import numpy as np
+import qtzmq
 import zmq
 
+from enum import Enum, unique
 from PyQt4 import QtCore as QtC
 
 MSGPACKRPC_REQUEST = 0
@@ -107,9 +108,16 @@ class StreamPacket:
 
 
 class Channel(QtC.QObject):
+    @unique
+    class Status(Enum):
+        idle = 0
+        configuring = 1
+        running = 2
+
     connection_ready = QtC.pyqtSignal()
-    error_conditions_changed = QtC.pyqtSignal(list)
     shutting_down = QtC.pyqtSignal()
+    error_conditions_changed = QtC.pyqtSignal(list)
+    status_changed = QtC.pyqtSignal(Status)
     stream_packet_received = QtC.pyqtSignal(StreamPacket)
 
     def __init__(self, zmq_ctx, host_addr, resource):
@@ -176,6 +184,10 @@ class Channel(QtC.QObject):
     def current_error_conditions(self):
         raise NotImplementedError('Need to implement error condition reading '
                                   'for this specific channel type.')
+
+    def current_status(self):
+        raise NotImplementedError('Need to implement status reading for this '
+                                  'specific channel type.')
 
     def add_stream_subscription(self, stream_idx):
         old_count = self._stream_subscriber_count.get(stream_idx, 0)
