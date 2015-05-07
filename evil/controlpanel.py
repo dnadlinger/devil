@@ -50,7 +50,7 @@ class ControlPanel(QtG.QWidget):
         self._register_area = register_area
         self.registerAreaLayout.addWidget(register_area)
 
-        self._extra_plot_items = {}
+        self._set_extra_plot_items(register_area.extra_plot_items())
         register_area.extra_plot_items_changed.connect(
             self._set_extra_plot_items)
 

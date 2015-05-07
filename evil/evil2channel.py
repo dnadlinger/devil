@@ -168,6 +168,24 @@ class Evil2RegisterArea(QtG.QWidget):
         settings['systemControl'] = self._control_flags
         return settings
 
+    def extra_plot_items(self):
+        value = {0: {'offset': self.inputOffsetSpinBox.value()},
+                 3: {'threshold': self.thresholdSpinBox.value()}}
+
+        status = _decode_status(self._system_control_reg.sval,
+                                self.rangeSpinBox.value())
+        if status == Channel.Status.configuring:
+            up_time, down_time = _sweep_timings(self.frequencySpinBox.value())
+            # Show lines for the sweep period, and for when the sweep center is
+            # reached during the up sweep as well as when the down sweep starts.
+            ticks = (up_time + down_time, [up_time / 2, up_time])
+            for i in range(4):
+                if i not in value:
+                    value[i] = {}
+                value[i]['period'] = ticks
+
+        return value
+
     def _set_control_flags(self, flags):
         self._control_flags = flags
         self.relockingEnabledCheckBox.setChecked(flags & LD_ON)
@@ -185,22 +203,7 @@ class Evil2RegisterArea(QtG.QWidget):
             self.sweepButton.setStyleSheet('QPushButton {color: blue}')
 
     def _emit_extra_plot_items_changed(self):
-        value = {0: {'offset': self.inputOffsetSpinBox.value()},
-                 3: {'threshold': self.thresholdSpinBox.value()}}
-
-        status = _decode_status(self._system_control_reg.sval,
-                                self.rangeSpinBox.value())
-        if status == Channel.Status.configuring:
-            up_time, down_time = _sweep_timings(self.frequencySpinBox.value())
-            # Show lines for the sweep period, and for when the sweep center is
-            # reached during the up sweep as well as when the down sweep starts.
-            ticks = (up_time + down_time, [up_time / 2, up_time])
-            for i in range(4):
-                if i not in value:
-                    value[i] = {}
-                value[i]['period'] = ticks
-
-        self.extra_plot_items_changed.emit(value)
+        self.extra_plot_items_changed.emit(self.extra_plot_items())
 
     def pid_reset(self):
         self.pid_off()
