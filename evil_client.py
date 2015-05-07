@@ -23,7 +23,7 @@ if __name__ == '__main__':
         error_msg = QtG.QMessageBox(QtG.QMessageBox.Warning,
                                     'EVIL Client already running',
                                     'Another instance of the EVIL client '
-                                    'software is already running on your'
+                                    'software is already running on your '
                                     'system. On Windows, this might cause '
                                     'network devices not to be discovered '
                                     'properly. Do you want to continue?',
