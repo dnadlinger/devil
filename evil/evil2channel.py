@@ -13,6 +13,26 @@ LD_ON = 1 << 4
 SWEEPING_MASK = PID_RST_N | RAMP_RST_N | OUTPUT_SEL
 SWEEPING_STATE = RAMP_RST_N | OUTPUT_SEL
 
+HW_CLOCK_INTERVAL_SECS = 1 / 96e6
+HW_RAMP_CNT_WIDTH = 44
+HW_RAMP_OUTPUT_WIDTH = 16
+
+
+def _decode_status(control_reg_val, sweep_range_reg_val):
+    if (control_reg_val & SWEEPING_MASK) == SWEEPING_STATE:
+        if sweep_range_reg_val == 0:
+            return Channel.Status.idle
+        else:
+            return Channel.Status.configuring
+    return Channel.Status.running
+
+
+def _sweep_timings(freq_reg_val):
+    counter_steps = ((1 << (HW_RAMP_CNT_WIDTH - HW_RAMP_OUTPUT_WIDTH)) - 1)
+    up_secs = counter_steps / freq_reg_val * HW_CLOCK_INTERVAL_SECS
+    down_secs = counter_steps // 8 / freq_reg_val * HW_CLOCK_INTERVAL_SECS
+    return up_secs, down_secs
+
 
 class Evil2Channel(Channel):
     STREAM_NAMES = [
@@ -49,7 +69,8 @@ class Evil2Channel(Channel):
 
         self._current_status = Channel.Status.idle
         self._system_control_reg.changed.connect(self._update_status)
-        self._widget_name_to_reg['rangeSpinBox'].changed.connect(self._update_status)
+        self._widget_name_to_reg['rangeSpinBox'].changed.connect(
+            self._update_status)
         self._update_status()
 
     def unlock(self):
@@ -71,7 +92,8 @@ class Evil2Channel(Channel):
         return regs
 
     def _create_control_panel(self):
-        reg_area = Evil2RegisterArea(self._system_control_reg, self._widget_name_to_reg)
+        reg_area = Evil2RegisterArea(self._system_control_reg,
+                                     self._widget_name_to_reg)
 
         c = ControlPanel(self.resource.display_name, self.STREAM_NAMES,
                          reg_area)
@@ -84,13 +106,9 @@ class Evil2Channel(Channel):
         self.error_conditions_changed.emit(self.current_error_conditions())
 
     def _update_status(self):
-        new_status = Channel.Status.running
-        if (self._system_control_reg.sval & SWEEPING_MASK) == SWEEPING_STATE:
-            if self._widget_name_to_reg['rangeSpinBox'].sval == 0:
-                new_status = Channel.Status.idle
-            else:
-                new_status = Channel.Status.configuring
-
+        new_status = _decode_status(self._system_control_reg.sval,
+                                    self._widget_name_to_reg[
+                                        'rangeSpinBox'].sval)
         if self._current_status == new_status:
             return
         self._current_status = new_status
@@ -122,7 +140,13 @@ class Evil2RegisterArea(QtG.QWidget):
         self.resetPidButton.clicked.connect(self.pid_reset)
         self.relockingEnabledCheckBox.clicked.connect(self.toggle_relocking)
 
+        self._system_control_reg.changed.connect(
+            self._emit_extra_plot_items_changed)
+        self.frequencySpinBox.valueChanged.connect(
+            self._emit_extra_plot_items_changed)
         self.inputOffsetSpinBox.valueChanged.connect(
+            self._emit_extra_plot_items_changed)
+        self.rangeSpinBox.valueChanged.connect(
             self._emit_extra_plot_items_changed)
         self.thresholdSpinBox.valueChanged.connect(
             self._emit_extra_plot_items_changed)
@@ -163,6 +187,19 @@ class Evil2RegisterArea(QtG.QWidget):
     def _emit_extra_plot_items_changed(self):
         value = {0: {'offset': self.inputOffsetSpinBox.value()},
                  3: {'threshold': self.thresholdSpinBox.value()}}
+
+        status = _decode_status(self._system_control_reg.sval,
+                                self.rangeSpinBox.value())
+        if status == Channel.Status.configuring:
+            up_time, down_time = _sweep_timings(self.frequencySpinBox.value())
+            # Show lines for the sweep period, and for when the sweep center is
+            # reached during the up sweep as well as when the down sweep starts.
+            ticks = (up_time + down_time, [up_time / 2, up_time])
+            for i in range(4):
+                if i not in value:
+                    value[i] = {}
+                value[i]['period'] = ticks
+
         self.extra_plot_items_changed.emit(value)
 
     def pid_reset(self):
