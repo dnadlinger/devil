@@ -11,6 +11,8 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+.. automodule:: evil.streamingview
+   :members:
 
 
 Indices and tables
