@@ -94,9 +94,9 @@ class DeviceList(QtG.QWidget):
     def _open_dashboard(self):
         if not self._dashboard:
             self._dashboard = Dashboard()
-            for c in self.channels:
-                if self._load_show_in_dashboard(c.resource.dev_id):
-                    self._dashboard.add_channel(c)
+            to_show = [c for c in self.channels
+                       if self._load_show_in_dashboard(c.resource.dev_id)]
+            self._dashboard.add_channels(to_show)
             self._dashboard.closed.connect(self._dashboard_closed)
             self._dashboard.hide_channel.connect(self._hide_from_dashboard)
             self._dashboard.show()
