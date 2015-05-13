@@ -42,15 +42,16 @@ class Dashboard(QtG.QMainWindow):
     def add_channels(self, channels):
         for c in channels:
             c.shutting_down.connect(self._channel_shutting_down)
-            c.error_conditions_changed.connect(
-                self._channel_conditions_changed)
-            c.status_changed.connect(self._channel_status_changed)
-            c.stream_packet_received.connect(self._got_stream_packet)
-
             c.add_stream_subscription(STREAM_IDX_TO_DISPLAY)
             self._channels.append(c)
 
         self._relayout()
+
+        for c in channels:
+            c.error_conditions_changed.connect(
+                self._channel_conditions_changed)
+            c.status_changed.connect(self._channel_status_changed)
+            c.stream_packet_received.connect(self._got_stream_packet)
 
     def remove_channel(self, channel):
         channel.shutting_down.disconnect(self._channel_shutting_down)
