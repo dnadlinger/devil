@@ -89,7 +89,7 @@ class DeviceList(QtG.QWidget):
 
     def _load_show_in_dashboard(self, dev_id):
         s = QtC.QSettings()
-        return int(s.value(IN_DASHBOARD_SETTINGS + dev_id, 2))
+        return int(s.value(IN_DASHBOARD_SETTINGS + dev_id, 0))
 
     def _open_dashboard(self):
         if not self._dashboard:
