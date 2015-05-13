@@ -33,6 +33,7 @@ class Dashboard(QtG.QMainWindow):
         self._channels = []
         self._channel_curve_map = {}
         self._channel_condition_text_map = {}
+        self._channel_plot_map = {}
         self._channel_name_label_map = {}
 
     def add_channel(self, channel):
@@ -95,10 +96,14 @@ class Dashboard(QtG.QMainWindow):
         self._view.clear()
         self._channel_curve_map.clear()
         self._channel_condition_text_map.clear()
+        self._channel_plot_map.clear()
         self._channel_name_label_map.clear()
 
         if not self._channels:
             return
+
+        layout = self._view.ci.layout
+        layout.setHorizontalSpacing(20)
 
         window_aspect = self.width() / self.height()
         target_aspect = 1
@@ -125,12 +130,18 @@ class Dashboard(QtG.QMainWindow):
                 self._update_status_colors(channel, channel.current_status())
             self._view.nextRow()
 
-        col_width = self.width() / cols
+        col_width = self.width() / cols - layout.horizontalSpacing()
         for i in range(cols):
-            self._view.ci.layout.setColumnPreferredWidth(i, col_width)
+            layout.setColumnFixedWidth(i, col_width)
+
+        # Set maximum width so that overly long names do not break the grid
+        # layout, even if they obviously still look ugly.
+        for l in self._channel_name_label_map.values():
+            l.setMaximumWidth(col_width)
 
     def _add_plot_for_channel(self, channel):
         plot = self._view.addPlot()
+        self._channel_plot_map[channel] = plot
         plot.setMouseEnabled(False, False)
         plot.hideButtons()
         plot.hideAxis('left')
@@ -172,8 +183,12 @@ class Dashboard(QtG.QMainWindow):
     def _got_stream_packet(self, packet):
         if packet.stream_idx != STREAM_IDX_TO_DISPLAY:
             return
+
         curve = self._channel_curve_map[self.sender()]
         curve.setData(packet.samples)
+
+        plot = self._channel_plot_map[self.sender()]
+        plot.setXRange(0, len(packet.samples), padding=0)
 
     def _channel_conditions_changed(self, conditions):
         channel = self.sender()
