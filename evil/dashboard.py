@@ -8,6 +8,14 @@ import pyqtgraph as pg
 # could be made user-configurable in the future.
 STREAM_IDX_TO_DISPLAY = 0
 
+COLOR_BG = (0, 43, 54)
+COLOR_TRACE_ACTIVE = (238, 232, 213)
+COLOR_TRACE_INACTIVE = (101, 123, 131)
+COLOR_LABEL_BG_ACTIVE = (7, 54, 66)
+COLOR_LABEL_BG_INACTIVE = (0, 43, 54)
+COLOR_LABEL_CONFIGURING = (133, 153, 0)
+COLOR_LABEL_RUNNING = (38, 139, 210)
+CSS_COLOR_ERROR = '#dc322f'
 
 class Dashboard(QtG.QMainWindow):
     closed = QtC.pyqtSignal()
@@ -28,6 +36,7 @@ class Dashboard(QtG.QMainWindow):
 
         self.setWindowTitle('EVIL Dashboard')
         self._view = pg.GraphicsLayoutWidget()
+        self._view.setBackground(COLOR_BG)
         self.setCentralWidget(self._view)
 
         self._channels = []
@@ -151,7 +160,7 @@ class Dashboard(QtG.QMainWindow):
         plot.hideButtons()
         plot.hideAxis('left')
         plot.hideAxis('bottom')
-        plot.setRange(yRange=(-513, 513), padding=0)
+        plot.setRange(yRange=(-514, 514), padding=0)
 
         # Disable the default pyqtgraph context menu entries, except for
         # the export option. Note: It is not clear whether these are
@@ -202,8 +211,9 @@ class Dashboard(QtG.QMainWindow):
     def _update_condition_text(self, channel, error_conditions):
         text = '&nbsp;&nbsp;'.join(map(lambda e: e.short_name,
                                        error_conditions))
-        self._channel_condition_text_map[channel].setHtml(
-            '<span style="color: red; font-weight: bold">' + text + '</span>')
+        html = '<span style="color: {}; font-weight: bold">{}</span>'.format(
+            CSS_COLOR_ERROR, text)
+        self._channel_condition_text_map[channel].setHtml(html)
 
     def _channel_status_changed(self, status):
         self._update_status_colors(self.sender(), status)
@@ -211,23 +221,24 @@ class Dashboard(QtG.QMainWindow):
     def _update_status_colors(self, channel, status):
         curve = self._channel_curve_map[channel]
         label = self._channel_name_label_map[channel]
+        plot = self._channel_plot_map[channel]
 
         if status == Channel.Status.idle:
-            curve.setPen(pg.mkPen((128, 128, 128)))
+            curve.setPen(pg.mkPen(COLOR_TRACE_INACTIVE))
             label.setText(channel.resource.display_name, color=QtG.QColor(
-                128, 128, 128))
-            label.setBgColor(QtG.QColor(0, 0, 0))
+                *COLOR_TRACE_INACTIVE))
+            label.setBgColor(QtG.QColor(*COLOR_LABEL_BG_INACTIVE))
             return
 
-        curve.setPen(pg.mkPen((255, 255, 255)))
-        label.setText(channel.resource.display_name, color=QtG.QColor(
-            255, 255, 255))
+        curve.setPen(pg.mkPen(COLOR_TRACE_ACTIVE))
+        label.setBgColor(QtG.QColor(*COLOR_LABEL_BG_ACTIVE))
+
         if status == Channel.Status.configuring:
-            label.setBgColor(QtG.QColor(0, 128, 0))
-            return
+            text_color = COLOR_LABEL_CONFIGURING
         if status == Channel.Status.running:
-            label.setBgColor(QtG.QColor(0, 0, 128))
-            return
+            text_color = COLOR_LABEL_RUNNING
+        label.setText(channel.resource.display_name, color=QtG.QColor(
+            *text_color))
 
     def _channel_shutting_down(self):
         self.remove_channel(self.sender())
@@ -237,7 +248,7 @@ class LabelItemWithBg(pg.LabelItem):
     def __init__(self, text=' ', parent=None, angle=0, **kwargs):
         pg.LabelItem.__init__(self, text, parent, angle, **kwargs)
 
-        self._bg_color = QtG.QColor(0, 0, 0)
+        self._bg_color = QtG.QColor(*COLOR_BG)
 
     def setBgColor(self, color):
         self._bg_color = color
