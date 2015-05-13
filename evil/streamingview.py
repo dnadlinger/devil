@@ -64,7 +64,11 @@ class StreamingView(QtG.QWidget):
             self._add_extra_items_from_dict()
 
         if self._use_trigger():
-            samples = samples[packet.trigger_offset:]
+            try:
+                samples = samples[packet.trigger_offset:]
+            except IndexError:
+                QtC.qCritical("Invalid trigger offset {} (have: {} samples)".
+                              format(packet.trigger_offset, len(samples)))
 
         sample_times = np.linspace(0, (len(samples) - 1) * interval, len(samples))
         self._plot_curve.setData(sample_times, samples)
