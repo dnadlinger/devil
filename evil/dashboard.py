@@ -106,6 +106,10 @@ class Dashboard(QtG.QMainWindow):
         layout = self._view.ci.layout
         layout.setHorizontalSpacing(20)
 
+        # TODO: Set larger spacing below label. Somehow, layout.setRowSpacing
+        # only ever seems to add space before the very first row, though.
+        layout.setVerticalSpacing(10)
+
         window_aspect = self.width() / self.height()
         target_aspect = 1
 
