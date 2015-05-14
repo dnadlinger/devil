@@ -39,7 +39,7 @@ class Dashboard(QtG.QMainWindow):
         self._view.setBackground(COLOR_BG)
         self.setCentralWidget(self._view)
 
-        self._channels = []
+        self._guichannels = []
         self._channel_curve_map = {}
         self._channel_condition_text_map = {}
         self._channel_plot_map = {}
@@ -48,29 +48,30 @@ class Dashboard(QtG.QMainWindow):
     def add_channel(self, channel):
         self.add_channels([channel])
 
-    def add_channels(self, channels):
-        for c in channels:
-            c.shutting_down.connect(self._channel_shutting_down)
-            c.add_stream_subscription(STREAM_IDX_TO_DISPLAY)
-            self._channels.append(c)
+    def add_channels(self, guichannels):
+        for c in guichannels:
+            c.channel.shutting_down.connect(self._channel_shutting_down)
+            c.channel.add_stream_subscription(STREAM_IDX_TO_DISPLAY)
+            self._guichannels.append(c)
 
         self._relayout()
 
-        for c in channels:
-            c.error_conditions_changed.connect(
+        for c in guichannels:
+            c.channel.error_conditions_changed.connect(
                 self._channel_conditions_changed)
-            c.status_changed.connect(self._channel_status_changed)
-            c.stream_packet_received.connect(self._got_stream_packet)
+            c.channel.status_changed.connect(self._channel_status_changed)
+            c.channel.stream_packet_received.connect(self._got_stream_packet)
 
-    def remove_channel(self, channel):
-        channel.shutting_down.disconnect(self._channel_shutting_down)
-        channel.error_conditions_changed.disconnect(
+    def remove_channel(self, guichannel):
+        c = guichannel.channel
+        c.shutting_down.disconnect(self._channel_shutting_down)
+        c.error_conditions_changed.disconnect(
             self._channel_conditions_changed)
-        channel.status_changed.disconnect(self._channel_status_changed)
-        channel.stream_packet_received.disconnect(self._got_stream_packet)
-        channel.remove_stream_subscription(STREAM_IDX_TO_DISPLAY)
+        c.status_changed.disconnect(self._channel_status_changed)
+        c.stream_packet_received.disconnect(self._got_stream_packet)
+        c.remove_stream_subscription(STREAM_IDX_TO_DISPLAY)
 
-        self._channels.remove(channel)
+        self._guichannels.remove(channel)
         self._relayout()
 
     def resizeEvent(self, event):
@@ -101,15 +102,13 @@ class Dashboard(QtG.QMainWindow):
         QtG.QMainWindow.closeEvent(self, event)
 
     def _relayout(self):
-        self._channels.sort(key=lambda a: a.resource.display_name)
-
         self._view.clear()
         self._channel_curve_map.clear()
         self._channel_condition_text_map.clear()
         self._channel_plot_map.clear()
         self._channel_name_label_map.clear()
 
-        if not self._channels:
+        if not self._guichannels:
             return
 
         layout = self._view.ci.layout
@@ -122,26 +121,28 @@ class Dashboard(QtG.QMainWindow):
         window_aspect = self.width() / self.height()
         target_aspect = 1
 
-        cols = round(sqrt(len(self._channels) * window_aspect / target_aspect))
-        cols = min(cols, len(self._channels))
+        cols = round(sqrt(len(self._guichannels) * window_aspect / target_aspect))
+        cols = min(cols, len(self._guichannels))
 
-        last_row = len(self._channels) % cols
+        last_row = len(self._guichannels) % cols
         if last_row == 0:
             last_row += cols
 
-        channel_iter = iter(self._channels + [None] * (cols - last_row))
+        self._guichannels.sort(key=lambda a: a.channel.resource.display_name)
+        channel_iter = iter(self._guichannels + [None] * (cols - last_row))
         for row in zip(*([channel_iter] * cols)):
-            for channel in row:
-                if not channel:
+            for guichannel in row:
+                if not guichannel:
                     break
-                self._add_plot_for_channel(channel)
+                self._add_plot_for_channel(guichannel)
             self._view.nextRow()
 
-            for channel in row:
-                if not channel:
+            for guichannel in row:
+                if not guichannel:
                     break
-                self._add_name_for_channel(channel)
-                self._update_status_colors(channel, channel.current_status())
+                self._add_name_for_channel(guichannel)
+                c = guichannel.channel
+                self._update_status_colors(c, c.current_status())
             self._view.nextRow()
 
         col_width = self.width() / cols - layout.horizontalSpacing()
@@ -153,7 +154,9 @@ class Dashboard(QtG.QMainWindow):
         for l in self._channel_name_label_map.values():
             l.setMaximumWidth(col_width)
 
-    def _add_plot_for_channel(self, channel):
+    def _add_plot_for_channel(self, guichannel):
+        channel = guichannel.channel
+
         plot = self._view.addPlot()
         self._channel_plot_map[channel] = plot
         plot.setMouseEnabled(False, False)
@@ -170,7 +173,7 @@ class Dashboard(QtG.QMainWindow):
         plot.vb.menu.clear()
 
         panel_action = plot.vb.menu.addAction('Open Control Panel...')
-        panel_action.triggered.connect(channel.show_control_panel)
+        panel_action.triggered.connect(guichannel.show_control_panel)
 
         unlock_action = plot.vb.menu.addAction('Unlock')
         unlock_action.triggered.connect(channel.unlock)
@@ -189,9 +192,9 @@ class Dashboard(QtG.QMainWindow):
         self._channel_condition_text_map[channel] = text
         self._update_condition_text(channel, channel.current_error_conditions())
 
-    def _add_name_for_channel(self, channel):
-        label = LabelItemWithBg(text=channel.resource.display_name, bold=True)
-        self._channel_name_label_map[channel] = label
+    def _add_name_for_channel(self, guichannel):
+        label = LabelItemWithBg(text=guichannel.channel.resource.display_name, bold=True)
+        self._channel_name_label_map[guichannel.channel] = label
         self._view.addItem(label)
 
     def _got_stream_packet(self, packet):

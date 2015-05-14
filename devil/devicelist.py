@@ -2,6 +2,7 @@ from PyQt4 import QtCore as QtC
 from PyQt4 import QtGui as QtG
 from PyQt4.uic import loadUi
 from devil.dashboard import Dashboard
+from devil.guichannel import GuiChannel
 
 HEADER_SETTING = 'device_list_header'
 IN_DASHBOARD_SETTINGS = 'show_in_dashboard/'
@@ -23,19 +24,20 @@ class DeviceList(QtG.QWidget):
         self.forceRescanButton.clicked.connect(self.force_rescan)
         self.openDashboardButton.clicked.connect(self._open_dashboard)
 
-        self.channels = []
+        self.guichannels = []
 
         self._channel_in_dashboard_boxes = {}
 
         self._dashboard = None
 
-    def register(self, channel):
+    def register(self, channel, create_control_panel_fn):
         # We need to keep a reference to the object around as connecting to a
         # signal only creates a weak references.
-        self.channels.append(channel)
-        self.channels.sort(key=lambda a: a.resource.display_name)
-        channel.connection_ready.connect(lambda: self._display_channel(channel))
-        channel.shutting_down.connect(lambda: self._remove_channel(channel))
+        guichannel = GuiChannel(channel, create_control_panel_fn)
+        self.guichannels.append(guichannel)
+        self.guichannels.sort(key=lambda a: a.channel.resource.display_name)
+        channel.connection_ready.connect(lambda: self._display_channel(guichannel))
+        channel.shutting_down.connect(lambda: self._remove_channel(guichannel))
 
     def closeEvent(self, event):
         state = self.deviceTableWidget.horizontalHeader().saveState()
@@ -43,49 +45,52 @@ class DeviceList(QtG.QWidget):
 
         self.closed.emit()
 
-    def _display_channel(self, channel):
+    def _display_channel(self, guichannel):
+        c = guichannel.channel
+
         tw = self.deviceTableWidget
         row = tw.rowCount()
         tw.insertRow(row)
 
-        tw.setItem(row, 0, QtG.QTableWidgetItem(channel.resource.display_name))
+        tw.setItem(row, 0, QtG.QTableWidgetItem(c.resource.display_name))
 
-        dev_id = channel.resource.dev_id
+        dev_id = c.resource.dev_id
         tw.setItem(row, 1, QtG.QTableWidgetItem(dev_id))
 
-        tw.setItem(row, 2, QtG.QTableWidgetItem(str(channel.resource.version)))
+        tw.setItem(row, 2, QtG.QTableWidgetItem(str(c.resource.version)))
 
         show_in_dashboard = QtG.QCheckBox()
         show_in_dashboard.setChecked(self._load_show_in_dashboard(dev_id))
         show_in_dashboard.stateChanged.connect(
-            lambda val: self._show_in_dashboard_changed(channel, val))
-        self._channel_in_dashboard_boxes[channel] = show_in_dashboard
+            lambda val: self._show_in_dashboard_changed(guichannel, val))
+        self._channel_in_dashboard_boxes[guichannel] = show_in_dashboard
         tw.setCellWidget(row, 3, show_in_dashboard)
 
         open_button = QtG.QPushButton('Control Panel')
-        open_button.clicked.connect(channel.show_control_panel)
+        open_button.clicked.connect(guichannel.show_control_panel)
         tw.setCellWidget(row, 4, open_button)
 
         tw.sortItems(0)
 
         if self._dashboard:
-            self._dashboard.add_channel(channel)
+            self._dashboard.add_channel(guichannel)
 
-    def _remove_channel(self, channel):
-        idx = self.channels.index(channel)
+    def _remove_channel(self, guichannel):
+        idx = self.guichannels.index(guichannel)
         self.deviceTableWidget.removeRow(idx)
-        self.channels.remove(channel)
-        del self._channel_in_dashboard_boxes[channel]
+        self.guichannels.remove(guichannel)
+        del self._channel_in_dashboard_boxes[guichannel]
 
-    def _show_in_dashboard_changed(self, channel, new_val):
+    def _show_in_dashboard_changed(self, guichannel, new_val):
         s = QtC.QSettings()
-        s.setValue(IN_DASHBOARD_SETTINGS + channel.resource.dev_id, new_val)
+        s.setValue(IN_DASHBOARD_SETTINGS + guichannel.channel.resource.dev_id,
+            new_val)
 
         if self._dashboard:
             if new_val == 2:
-                self._dashboard.add_channel(channel)
+                self._dashboard.add_channel(guichannel)
             elif new_val == 0:
-                self._dashboard.remove_channel(channel)
+                self._dashboard.remove_channel(guichannel)
 
     def _load_show_in_dashboard(self, dev_id):
         s = QtC.QSettings()
@@ -94,8 +99,8 @@ class DeviceList(QtG.QWidget):
     def _open_dashboard(self):
         if not self._dashboard:
             self._dashboard = Dashboard()
-            to_show = [c for c in self.channels
-                       if self._load_show_in_dashboard(c.resource.dev_id)]
+            to_show = [c for c in self.guichannels
+                       if self._load_show_in_dashboard(c.channel.resource.dev_id)]
             self._dashboard.add_channels(to_show)
             self._dashboard.closed.connect(self._dashboard_closed)
             self._dashboard.hide_channel.connect(self._hide_from_dashboard)

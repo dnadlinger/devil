@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from devil.evil2channel import Evil2Channel
+from devil.evil2channel import Evil2Channel, create_evil2_control_panel
 from devil.devicelist import DeviceList
 import fliquer
 import zmq
@@ -42,13 +42,14 @@ if __name__ == '__main__':
         if resource.dev_type != 'tiqi.devil.channel':
             return
 
-        if resource.dev_id in [c.resource.dev_id for c in
-                               device_list.channels]:
+        if resource.dev_id in [c.channel.resource.dev_id for c in
+                               device_list.guichannels]:
             # Resource already exists, ignore.
             return
 
         if resource.version.major == 2:
-            device_list.register(Evil2Channel(zmq_ctx, host, resource))
+            device_list.register(Evil2Channel(zmq_ctx, host, resource),
+                create_evil2_control_panel)
         else:
             QtC.qWarning('Cannot handle EVIL version {}, ignoring'.format(
                 resource.version))

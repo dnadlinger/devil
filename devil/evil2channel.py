@@ -17,6 +17,13 @@ HW_CLOCK_INTERVAL_SECS = 1 / 96e6
 HW_RAMP_CNT_WIDTH = 44
 HW_RAMP_OUTPUT_WIDTH = 16
 
+STREAM_NAMES = [
+    'ADC (error signal)',
+    'PID/ramp output',
+    'Relocking slow lowpass filter',
+    'Relocking filter difference'
+]
+
 
 def _decode_status(control_reg_val, sweep_range_reg_val):
     if (control_reg_val & SWEEPING_MASK) == SWEEPING_STATE:
@@ -35,13 +42,6 @@ def _sweep_timings(freq_reg_val):
 
 
 class Evil2Channel(Channel):
-    STREAM_NAMES = [
-        'ADC (error signal)',
-        'PID/ramp output',
-        'Relocking slow lowpass filter',
-        'Relocking filter difference'
-    ]
-
     def __init__(self, zmq_ctx, host_addr, resource):
         Channel.__init__(self, zmq_ctx, host_addr, resource)
 
@@ -91,17 +91,6 @@ class Evil2Channel(Channel):
         regs.append(self._system_condition_reg)
         return regs
 
-    def _create_control_panel(self):
-        reg_area = Evil2RegisterArea(self._system_control_reg,
-                                     self._widget_name_to_reg)
-
-        c = ControlPanel(self.resource.display_name, self.STREAM_NAMES,
-                         reg_area)
-        c.set_error_conditions(self.current_error_conditions())
-        self.error_conditions_changed.connect(c.set_error_conditions)
-
-        return c
-
     def _condition_reg_changed(self):
         self.error_conditions_changed.emit(self.current_error_conditions())
 
@@ -115,13 +104,25 @@ class Evil2Channel(Channel):
         self.status_changed.emit(new_status)
 
 
+def create_evil2_control_panel(channel):
+    reg_area = Evil2RegisterArea(channel._system_control_reg,
+                                 channel._widget_name_to_reg)
+
+    cp = ControlPanel(channel.resource.display_name, STREAM_NAMES, reg_area)
+
+    cp.set_error_conditions(channel.current_error_conditions())
+    channel.error_conditions_changed.connect(cp.set_error_conditions)
+
+    return cp
+
+
 class Evil2RegisterArea(QtG.QWidget):
     extra_plot_items_changed = QtC.pyqtSignal(dict)
 
     def __init__(self, system_control_reg, register_name_map):
         QtG.QWidget.__init__(self)
 
-        uic.loadUi('ui/devil.registerarea.ui', self)
+        uic.loadUi('ui/evil2registerarea.ui', self)
 
         self._system_control_reg = system_control_reg
         self._system_control_reg.changed.connect(self._set_control_flags)

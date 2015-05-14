@@ -119,6 +119,7 @@ class Channel(QtC.QObject):
     error_conditions_changed = QtC.pyqtSignal(list)
     status_changed = QtC.pyqtSignal(Status)
     stream_packet_received = QtC.pyqtSignal(StreamPacket)
+    stream_acquisition_config_changed = QtC.pyqtSignal(object)
 
     def __init__(self, zmq_ctx, host_addr, resource):
         QtC.QObject.__init__(self)
@@ -133,12 +134,6 @@ class Channel(QtC.QObject):
 
         self._reg_idx_to_object = {}
 
-        # TODO: It would be a good idea to move the control panel handling out
-        # to e.g. DeviceList, so that this class is exclusively concerned with
-        # handling the actual communication and not any of the GUI
-        # representation.
-        self._control_panel = None
-
         self._rpc_socket = qtzmq.Socket(zmq_ctx, zmq.REQ)
         self._rpc_socket.received_msg.connect(
             lambda m: QtC.qCritical(
@@ -151,30 +146,6 @@ class Channel(QtC.QObject):
         self._stream_acquisition_config = None
 
         self._invoke_rpc('notificationPort', [], self._got_notification_port)
-
-    def show_control_panel(self):
-        if self._control_panel:
-            self._control_panel.activateWindow()
-        else:
-            self._control_panel = self._create_control_panel()
-
-            self._control_panel.closed.connect(self._destroy_control_panel)
-
-            self.stream_packet_received.connect(
-                self._control_panel.got_stream_packet)
-            self._control_panel.set_stream_acquisition_config(
-                *self._stream_acquisition_config)
-            self._control_panel.stream_acquisition_config_changed.connect(
-                self._set_stream_acquisition_config)
-
-            self._control_panel.stream_subscription_added.connect(
-                self.add_stream_subscription)
-            for c in self._control_panel.active_stream_channels():
-                self.add_stream_subscription(c)
-            self._control_panel.stream_subscription_removed.connect(
-                self.remove_stream_subscription)
-
-            self._control_panel.show()
 
     def unlock(self):
         raise NotImplementedError('Need to implement function that unlocks '
@@ -210,7 +181,10 @@ class Channel(QtC.QObject):
                 self._active_stream_sockets[stream_idx].close()
                 del self._active_stream_sockets[stream_idx]
 
-    def _set_stream_acquisition_config(self, time_span_seconds, points):
+    def stream_acquisition_config(self):
+        return self._stream_acquisition_config
+
+    def set_stream_acquisition_config(self, time_span_seconds, points):
         config = time_span_seconds, points
         if config != self._stream_acquisition_config:
             self._invoke_rpc('setStreamAcquisitionConfig', config)
@@ -222,14 +196,6 @@ class Channel(QtC.QObject):
 
     def _registers(self):
         return []
-
-    def _create_control_panel(self):
-        raise NotImplementedError(
-            'Need to implement control panel for this specific EVIL version')
-
-    def _destroy_control_panel(self):
-        self._control_panel.deleteLater()
-        self._control_panel = None
 
     def _register_conflict(self, reg_idx):
         self._reg_idx_to_object[reg_idx].mark_as_desynchronized()
@@ -297,9 +263,8 @@ class Channel(QtC.QObject):
             if method == 'streamAcquisitionConfigChanged':
                 time_span_seconds, points = params
                 self._stream_acquisition_config = (time_span_seconds, points)
-                if self._control_panel:
-                    self._control_panel.set_stream_acquisition_config(
-                        time_span_seconds, points)
+                self.stream_acquisition_config_changed.emit(
+                    self._stream_acquisition_config)
                 return
 
             if method == 'shutdown':
@@ -308,9 +273,6 @@ class Channel(QtC.QObject):
                 for s in self._active_stream_sockets.values():
                     s.close()
                 self._active_stream_sockets.clear()
-
-                if self._control_panel:
-                    self._control_panel.disconnected()
 
                 self.shutting_down.emit()
                 return
