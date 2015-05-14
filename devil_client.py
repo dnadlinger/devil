@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-from evil.evil2channel import Evil2Channel
-from evil.devicelist import DeviceList
+from devil.evil2channel import Evil2Channel
+from devil.devicelist import DeviceList
 import fliquer
 import zmq
 
@@ -11,18 +11,18 @@ from PyQt4 import QtGui as QtG
 if __name__ == '__main__':
     import sys
 
-    QtC.QCoreApplication.setApplicationName('EVIL')
+    QtC.QCoreApplication.setApplicationName('DEVIL')
     QtC.QCoreApplication.setOrganizationName('TIQI')
     QtC.QCoreApplication.setOrganizationDomain('tiqi.ethz.ch')
 
     app = QtG.QApplication(sys.argv)
 
-    shared_mem = QtC.QSharedMemory('tiqi.evil.client.isStarted')
+    shared_mem = QtC.QSharedMemory('tiqi.devil.client.isStarted')
     if not shared_mem.create(1) and\
             shared_mem.error() == QtC.QSharedMemory.AlreadyExists:
         error_msg = QtG.QMessageBox(QtG.QMessageBox.Warning,
-                                    'EVIL Client already running',
-                                    'Another instance of the EVIL client '
+                                    'DEVIL already running',
+                                    'Another instance of the DEVIL client '
                                     'software is already running on your '
                                     'system. On Windows, this might cause '
                                     'network devices not to be discovered '
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     device_list.closed.connect(app.quit)
 
     def new_resource(host, resource):
-        if resource.dev_type != 'tiqi.evil.channel':
+        if resource.dev_type != 'tiqi.devil.channel':
             return
 
         if resource.dev_id in [c.resource.dev_id for c in

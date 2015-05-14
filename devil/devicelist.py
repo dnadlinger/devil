@@ -1,7 +1,7 @@
 from PyQt4 import QtCore as QtC
 from PyQt4 import QtGui as QtG
 from PyQt4.uic import loadUi
-from evil.dashboard import Dashboard
+from devil.dashboard import Dashboard
 
 HEADER_SETTING = 'device_list_header'
 IN_DASHBOARD_SETTINGS = 'show_in_dashboard/'

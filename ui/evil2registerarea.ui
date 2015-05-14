@@ -467,7 +467,7 @@
   <customwidget>
    <class>TTLExpansionSpinBox</class>
    <extends>QSpinBox</extends>
-   <header>evil.customwidgets</header>
+   <header>devil.customwidgets</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -1,7 +1,7 @@
 from PyQt4 import QtCore as QtC
 from PyQt4 import QtGui as QtG
 from math import sqrt
-from evil.channel import Channel
+from devil.channel import Channel
 import pyqtgraph as pg
 
 # Currently, we always display the stream with index 0 on the dashboard. This
@@ -26,15 +26,15 @@ class Dashboard(QtG.QMainWindow):
 
         settings = QtC.QSettings()
 
-        saved_geometry = settings.value("dashboard/geometry")
+        saved_geometry = settings.value('dashboard/geometry')
         if saved_geometry:
             self.restoreGeometry(saved_geometry)
 
-        stored_window_state = settings.value("dashboard/windowState")
+        stored_window_state = settings.value('dashboard/windowState')
         if stored_window_state:
             self.restoreState(stored_window_state)
 
-        self.setWindowTitle('EVIL Dashboard')
+        self.setWindowTitle('Dashboard – DEVIL')
         self._view = pg.GraphicsLayoutWidget()
         self._view.setBackground(COLOR_BG)
         self.setCentralWidget(self._view)
@@ -94,8 +94,8 @@ class Dashboard(QtG.QMainWindow):
 
     def closeEvent(self, event):
         settings = QtC.QSettings()
-        settings.setValue("dashboard/geometry", self.saveGeometry())
-        settings.setValue("dashboard/windowState", self.saveState())
+        settings.setValue('dashboard/geometry', self.saveGeometry())
+        settings.setValue('dashboard/windowState', self.saveState())
 
         self.closed.emit()
         QtG.QMainWindow.closeEvent(self, event)

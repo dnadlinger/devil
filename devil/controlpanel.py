@@ -2,7 +2,7 @@ from PyQt4 import QtCore as QtC
 from PyQt4 import QtGui as QtG
 from PyQt4.uic import loadUi
 import numpy as np
-from evil.streamingview import StreamingView
+from devil.streamingview import StreamingView
 
 GUI_VERSION = 4.0
 
@@ -223,7 +223,7 @@ class ControlPanel(QtG.QWidget):
         except Exception as e:
             msg = 'An error occurred while trying to load settings from "{}": {}'.\
                 format(filename, e)
-            QtG.QMessageBox.warning(self, 'EVIL – Could not load settings', msg)
+            QtG.QMessageBox.warning(self, 'Could not load settings – DEVIL', msg)
 
     def _save_settings(self):
         filename = QtG.QFileDialog.getSaveFileName(self, directory="unnamed.evf",
@@ -240,7 +240,7 @@ class ControlPanel(QtG.QWidget):
                     f.write(line)
         except Exception as e:
             msg = 'An error occurred while trying to save settings to "{}": {}'.format(filename, e)
-            QtG.QMessageBox.warning(self, 'EVIL – Could not save settings', msg)
+            QtG.QMessageBox.warning(self, 'Could not save settings – DEVIL', msg)
 
     def _set_layout_enabled(self, layout, enabled):
         for i in range(layout.count()):

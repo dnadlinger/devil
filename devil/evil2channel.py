@@ -1,8 +1,8 @@
 from PyQt4 import QtCore as QtC
 from PyQt4 import QtGui as QtG
 from PyQt4 import uic
-from evil.channel import Channel, ErrorCondition, Register
-from evil.controlpanel import ControlPanel
+from devil.channel import Channel, ErrorCondition, Register
+from devil.controlpanel import ControlPanel
 
 
 PID_RST_N = 1 << 0
@@ -121,7 +121,7 @@ class Evil2RegisterArea(QtG.QWidget):
     def __init__(self, system_control_reg, register_name_map):
         QtG.QWidget.__init__(self)
 
-        uic.loadUi('ui/evil2registerarea.ui', self)
+        uic.loadUi('ui/devil.registerarea.ui', self)
 
         self._system_control_reg = system_control_reg
         self._system_control_reg.changed.connect(self._set_control_flags)
