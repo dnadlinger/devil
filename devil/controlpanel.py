@@ -19,7 +19,7 @@ class ControlPanel(QtG.QWidget):
         self._stream_names = stream_names
 
         loadUi('ui/controlpanel.ui', self)
-        self.setWindowTitle(channel_name + ' – EVIL')
+        self.setWindowTitle(channel_name + ' – DEVIL')
 
         self._stream_save_file = None
 
