@@ -71,7 +71,7 @@ class Dashboard(QtG.QMainWindow):
         c.stream_packet_received.disconnect(self._got_stream_packet)
         c.remove_stream_subscription(STREAM_IDX_TO_DISPLAY)
 
-        self._guichannels.remove(channel)
+        self._guichannels.remove(guichannel)
         self._relayout()
 
     def resizeEvent(self, event):
