@@ -17,6 +17,7 @@ COLOR_LABEL_CONFIGURING = (133, 153, 0)
 COLOR_LABEL_RUNNING = (38, 139, 210)
 CSS_COLOR_ERROR = '#dc322f'
 
+
 class Dashboard(QtG.QMainWindow):
     closed = QtC.pyqtSignal()
     hide_channel = QtC.pyqtSignal(object)
@@ -179,8 +180,8 @@ class Dashboard(QtG.QMainWindow):
         unlock_action.triggered.connect(channel.unlock)
 
         hide_action = plot.vb.menu.addAction('Hide from Dashboard')
-        hide_action.triggered.connect(lambda *args, c=channel:
-                                      self.hide_channel.emit(c))
+        hide_action.triggered.connect(lambda *args, gc=guichannel:
+                                      self.hide_channel.emit(gc))
 
         curve = pg.PlotCurveItem(antialias=True)
         plot.addItem(curve)
