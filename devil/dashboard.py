@@ -245,7 +245,11 @@ class Dashboard(QtG.QMainWindow):
             *text_color))
 
     def _channel_shutting_down(self):
-        self.remove_channel(self.sender())
+        channel = self.sender()
+        for gc in self._guichannels:
+            if gc.channel == channel:
+                self.remove_channel(gc)
+                return
 
 
 class LabelItemWithBg(pg.LabelItem):
