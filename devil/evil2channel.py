@@ -50,7 +50,7 @@ class Evil2Channel(Channel):
         self._system_condition_reg = Register(30)
         self._system_condition_reg.changed.connect(self._condition_reg_changed)
         self._cond_mask_to_error = {
-            0b1: ErrorCondition('ADC_OVER', 'Analog input out of range')
+            0b1: ErrorCondition('ADC_RANGE', 'Analog input out of range')
         }
 
         self._widget_name_to_reg = {
