@@ -12,6 +12,9 @@ MSGPACKRPC_NOTIFICATION = 2
 
 MSGPACK_EXT_INT8ARRAY = 1
 
+HEARTBEAT_INTERVAL_MSECS = 5000
+HEARTBEAT_TIMEOUT_MSECS = 2000
+
 
 class Register(QtC.QObject):
     changed_locally = QtC.pyqtSignal(int, int)
@@ -115,6 +118,7 @@ class Channel(QtC.QObject):
         running = 2
 
     connection_ready = QtC.pyqtSignal()
+    connection_failed = QtC.pyqtSignal(str)
     shutting_down = QtC.pyqtSignal()
     error_conditions_changed = QtC.pyqtSignal(list)
     status_changed = QtC.pyqtSignal(Status)
@@ -140,6 +144,12 @@ class Channel(QtC.QObject):
                 'Unhandled message on RPC socket: {}'.format(m)))
         self._rpc_socket.error.connect(self._socket_error)
         self._rpc_socket.connect(self._remote_endpoint(resource.port))
+
+        self._heartbeat_send_timer = QtC.QTimer()
+        self._heartbeat_send_timer.timeout.connect(self._send_heartbeat)
+
+        self._heartbeat_timeout_timer = QtC.QTimer()
+        self._heartbeat_timeout_timer.timeout.connect(self._heartbeat_timed_out)
 
         self._stream_ports = []
         self._stream_subscriber_count = {}
@@ -244,7 +254,19 @@ class Channel(QtC.QObject):
     def _got_stream_acquisition_config(self, val):
         time_span_seconds, points = val
         self._stream_acquisition_config = (time_span_seconds, points)
+
+        self._heartbeat_send_timer.start(HEARTBEAT_INTERVAL_MSECS)
         self.connection_ready.emit()
+
+    def _shutdown(self):
+        self._rpc_socket.close()
+        self._heartbeat_send_timer.stop()
+        self._notification_socket.close()
+        for s in self._active_stream_sockets.values():
+            s.close()
+        self._active_stream_sockets.clear()
+
+        self.shutting_down.emit()
 
     def _got_notification(self, msg):
         try:
@@ -268,13 +290,7 @@ class Channel(QtC.QObject):
                 return
 
             if method == 'shutdown':
-                self._rpc_socket.close()
-                self._notification_socket.close()
-                for s in self._active_stream_sockets.values():
-                    s.close()
-                self._active_stream_sockets.clear()
-
-                self.shutting_down.emit()
+                self._shutdown()
                 return
 
             QtC.qWarning(
@@ -287,9 +303,8 @@ class Channel(QtC.QObject):
         try:
             msg_type, method, params = msgpack.unpackb(msg, encoding='utf-8')
             if msg_type != MSGPACKRPC_NOTIFICATION:
-                self._rpc_error(
-                    'Expected msgpack-rpc notification for streaming packet, but got: {}'.format(
-                        msg_type))
+                self._rpc_error('Expected msgpack-rpc notification for '
+                                'streaming packet, but got: {}'.format(msg_type))
                 return
 
             if method != 'streamPacket':
@@ -308,7 +323,6 @@ class Channel(QtC.QObject):
             self.stream_packet_received.emit(packet)
         except Exception as e:
             self._rpc_error('Error while handling stream packet: {}'.format(e))
-
 
     def _invoke_rpc(self, method, args, response_handler=None):
         # We do not use the sequence id, just pass zero.
@@ -343,13 +357,29 @@ class Channel(QtC.QObject):
         self._rpc_socket.request(self._pending_rpc_request[0],
                                  self._got_rpc_response)
 
+    def _send_heartbeat(self):
+        if self._heartbeat_timeout_timer.isActive():
+            # Still waiting for a previous heartbeat reply.
+            return
+
+        self._invoke_rpc('ping', [], self._got_heartbeat)
+        self._heartbeat_timeout_timer.start(HEARTBEAT_TIMEOUT_MSECS)
+
+    def _got_heartbeat(self, _):
+        self._heartbeat_timeout_timer.stop()
+
+    def _heartbeat_timed_out(self):
+        self._heartbeat_timeout_timer.stop()
+        self.connection_failed.emit('Connection timed out.')
+        self._shutdown()
+
     def _socket_error(self, err):
-        # TODO: Close and unregister device.
-        QtC.qWarning('Socket error: {}'.format(err))
+        self.connection_failed.emit('Socket error: {}'.format(err))
+        self._shutdown()
 
     def _rpc_error(self, err):
-        # TODO: Close and unregister device.
-        QtC.qWarning('RPC error: {}'.format(err))
+        self.connection_failed.emit('RPC error: {}'.format(err))
+        self._shutdown()
 
     def _remote_endpoint(self, port):
         return 'tcp://{}:{}'.format(self._host_addr.toString(), port)

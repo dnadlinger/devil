@@ -12,6 +12,11 @@ class Socket(QtC.QObject):
 
         self._socket = ctx.socket(sock_type)
 
+        # Do not try to reconnect. In our application, we expect services to
+        # suddenly disappear if the physical device is unplugged. Reconnection
+        # is handled via rediscovery on the application layer.
+        self._socket.setsockopt(zmq.RECONNECT_IVL, -1)
+
         if sock_type == zmq.SUB:
             # By default, subscribe to everything.
             self._socket.setsockopt(zmq.SUBSCRIBE, b'')
@@ -59,7 +64,8 @@ class Socket(QtC.QObject):
                     self.received_msg.emit(msg)
         except zmq.ZMQError as e:
             # EAGAIN == would have blocked
-            # EFSM == can't send/receive due to the protocol state machine
+            # EFSM == can't send/receive right now due to the protocol ordering
+            # constraints
             if e.errno not in (zmq.EAGAIN, zmq.EFSM):
                 self._response_handler = None
                 self.error.emit(e)

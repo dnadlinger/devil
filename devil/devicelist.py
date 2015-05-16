@@ -36,8 +36,18 @@ class DeviceList(QtG.QWidget):
         guichannel = GuiChannel(channel, create_control_panel_fn)
         self.guichannels.append(guichannel)
         self.guichannels.sort(key=lambda a: a.channel.resource.display_name)
+
         channel.connection_ready.connect(lambda: self._display_channel(guichannel))
         channel.shutting_down.connect(lambda: self._remove_channel(guichannel))
+        channel.connection_failed.connect(self._channel_connection_failed)
+
+    def _channel_connection_failed(self, msg):
+        QtC.qWarning('[{}] Connection failed: {}'.format(
+            self.sender().resource.display_name, msg))
+
+        # Immediately rescan to swiftly recover from intermittent connection
+        # problems.
+        self.force_rescan.emit()
 
     def closeEvent(self, event):
         state = self.deviceTableWidget.horizontalHeader().saveState()
