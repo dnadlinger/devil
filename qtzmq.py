@@ -21,18 +21,25 @@ class Socket(QtC.QObject):
         self._notifier.activated.connect(self._might_have_data)
 
         self._response_handler = None
+        self._closed = False
 
     def connect(self, addrspec):
         self._socket.connect(addrspec)
 
     def send(self, msg):
+        assert not self._closed
         return self._socket.send(msg)
 
     def request(self, msg, response_handler):
+        assert not self._closed
+
         self._response_handler = response_handler
         return self.send(msg)
 
     def close(self):
+        assert not self._closed
+        self._closed = True
+
         self._notifier.setEnabled(False)
         self._socket.close()
 
@@ -40,8 +47,9 @@ class Socket(QtC.QObject):
         try:
             # At least for SUB sockets, we need to try to receive more messages
             # even if there aren't any for the socket notifier to work
-            # correctly.
-            while True:
+            # correctly. Do not continue to try to read if the socket has been
+            # closed in the response handler to not signal spurious errors.
+            while not self._closed:
                 msg = self._socket.recv(flags=zmq.NOBLOCK)
                 if self._response_handler:
                     handler = self._response_handler
