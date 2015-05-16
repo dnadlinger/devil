@@ -99,6 +99,9 @@ class Dashboard(QtG.QMainWindow):
         settings.setValue('dashboard/geometry', self.saveGeometry())
         settings.setValue('dashboard/windowState', self.saveState())
 
+        for gc in self._guichannels:
+            gc.channel.remove_stream_subscription(STREAM_IDX_TO_DISPLAY)
+
         self.closed.emit()
         QtG.QMainWindow.closeEvent(self, event)
 
