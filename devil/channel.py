@@ -119,7 +119,7 @@ class Channel(QtC.QObject):
     error_conditions_changed = QtC.pyqtSignal(list)
     status_changed = QtC.pyqtSignal(Status)
     stream_packet_received = QtC.pyqtSignal(StreamPacket)
-    stream_acquisition_config_changed = QtC.pyqtSignal(object)
+    stream_acquisition_config_changed = QtC.pyqtSignal(float, int)
 
     def __init__(self, zmq_ctx, host_addr, resource):
         QtC.QObject.__init__(self)
@@ -264,7 +264,7 @@ class Channel(QtC.QObject):
                 time_span_seconds, points = params
                 self._stream_acquisition_config = (time_span_seconds, points)
                 self.stream_acquisition_config_changed.emit(
-                    self._stream_acquisition_config)
+                    *self._stream_acquisition_config)
                 return
 
             if method == 'shutdown':
