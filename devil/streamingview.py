@@ -67,7 +67,7 @@ class StreamingView(QtG.QWidget):
             try:
                 samples = samples[packet.trigger_offset:]
             except IndexError:
-                QtC.qCritical("Invalid trigger offset {} (have: {} samples)".
+                QtC.qCritical('Invalid trigger offset {} (have: {} samples)'.
                               format(packet.trigger_offset, len(samples)))
 
         sample_times = np.linspace(0, (len(samples) - 1) * interval, len(samples))
@@ -85,8 +85,11 @@ class StreamingView(QtG.QWidget):
 
     def _change_channel(self, new_idx):
         old_idx = self._current_channel
+
         self._current_channel = new_idx
+        self._plot_curve.clear()
         self._add_extra_items_from_dict()
+
         self.channel_changed.emit(old_idx, new_idx)
 
     def _add_extra_items_from_dict(self):
