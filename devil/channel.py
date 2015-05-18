@@ -261,6 +261,7 @@ class Channel(QtC.QObject):
     def _shutdown(self):
         self._rpc_socket.close()
         self._heartbeat_send_timer.stop()
+        self._heartbeat_timeout_timer.stop()
         self._notification_socket.close()
         for s in self._active_stream_sockets.values():
             s.close()
