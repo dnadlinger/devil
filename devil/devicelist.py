@@ -25,6 +25,7 @@ class DeviceList(QtG.QWidget):
         self.openDashboardButton.clicked.connect(self._open_dashboard)
 
         self.guichannels = []
+        self.guichannels_displayed = []
 
         self._channel_in_dashboard_boxes = {}
 
@@ -35,7 +36,6 @@ class DeviceList(QtG.QWidget):
         # signal only creates a weak references.
         guichannel = GuiChannel(channel, create_control_panel_fn)
         self.guichannels.append(guichannel)
-        self.guichannels.sort(key=lambda a: a.channel.resource.display_name)
 
         channel.connection_ready.connect(lambda: self._display_channel(guichannel))
         channel.shutting_down.connect(lambda: self._remove_channel(guichannel))
@@ -56,12 +56,15 @@ class DeviceList(QtG.QWidget):
         self.closed.emit()
 
     def _display_channel(self, guichannel):
-        c = guichannel.channel
+        self.guichannels_displayed.append(guichannel)
+        self.guichannels_displayed.sort(
+            key=lambda a: a.channel.resource.display_name)
 
         tw = self.deviceTableWidget
-        row = tw.rowCount()
+        row = self.guichannels_displayed.index(guichannel)
         tw.insertRow(row)
 
+        c = guichannel.channel
         tw.setItem(row, 0, QtG.QTableWidgetItem(c.resource.display_name))
 
         dev_id = c.resource.dev_id
@@ -80,16 +83,16 @@ class DeviceList(QtG.QWidget):
         open_button.clicked.connect(guichannel.show_control_panel)
         tw.setCellWidget(row, 4, open_button)
 
-        tw.sortItems(0)
-
         if self._dashboard:
             self._dashboard.add_channel(guichannel)
 
     def _remove_channel(self, guichannel):
-        idx = self.guichannels.index(guichannel)
-        self.deviceTableWidget.removeRow(idx)
+        if guichannel in self.guichannels_displayed:
+            idx = self.guichannels_displayed.index(guichannel)
+            self.deviceTableWidget.removeRow(idx)
+            del self._channel_in_dashboard_boxes[guichannel]
+            self.guichannels_displayed.remove(guichannel)
         self.guichannels.remove(guichannel)
-        del self._channel_in_dashboard_boxes[guichannel]
 
     def _show_in_dashboard_changed(self, guichannel, new_val):
         s = QtC.QSettings()
