@@ -18,6 +18,10 @@ class GuiChannel:
                 self._control_panel.set_stream_acquisition_config)
             self.channel.shutting_down.connect(self._control_panel.disconnected)
 
+            self.channel.status_changed.connect(
+                lambda s: self._set_trigger_from_status(s))
+            self._set_trigger_from_status(self.channel.current_status())
+
             # Control Panel -> channel connections
             self._control_panel.set_stream_acquisition_config(
                 *self.channel.stream_acquisition_config())
@@ -35,3 +39,7 @@ class GuiChannel:
     def _destroy_control_panel(self):
         self._control_panel.deleteLater()
         self._control_panel = None
+
+    def _set_trigger_from_status(self, status):
+        self._control_panel.set_can_trigger_streams(
+            status == self.channel.Status.configuring)

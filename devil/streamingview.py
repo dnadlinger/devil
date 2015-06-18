@@ -34,6 +34,7 @@ class StreamingView(QtG.QWidget):
         pi.setLabel('bottom', 'time', 's')
         self._plot_curve = pi.plot(antialias=True)
 
+        self._can_trigger = True
         self._extra_plot_items = {}
         self._displayed_extra_items = []
         self.rampTriggerCheckBox.stateChanged.connect(
@@ -80,8 +81,18 @@ class StreamingView(QtG.QWidget):
         self._extra_plot_items = extra_plot_items
         self._add_extra_items_from_dict()
 
+    def set_can_trigger(self, enable):
+        """
+        Sets whether the view should attempt to use the stream trigger if the
+        user tries to.
+
+        For overriding the user selection to avoid displaying nothing when no
+        sweep is active, etc..
+        """
+        self._can_trigger = enable
+
     def _use_trigger(self):
-        return self.rampTriggerCheckBox.isChecked()
+        return self._can_trigger and self.rampTriggerCheckBox.isChecked()
 
     def _change_channel(self, new_idx):
         old_idx = self._current_channel

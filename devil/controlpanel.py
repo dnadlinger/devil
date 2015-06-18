@@ -40,6 +40,7 @@ class ControlPanel(QtG.QWidget):
         # e.g. the threshold line to the filtered difference streaming channel
         self._extra_plot_items = {}
 
+        self._can_trigger_streams = True
         self._streaming_views = []
         self.add_streaming_view()
 
@@ -87,6 +88,11 @@ class ControlPanel(QtG.QWidget):
     def set_stream_acquisition_config(self, time_span_seconds, points):
         self.acquireTimeSpinBox.setValue(time_span_seconds * 1000)
         self.acquirePointsSpinBox.setValue(points)
+
+    def set_can_trigger_streams(self, can_trigger):
+        self._can_trigger_streams = can_trigger
+        for v in self._streaming_views:
+            v.set_can_trigger(can_trigger)
 
     def _update_stream_acquisition_config(self):
         time_span_seconds = self.acquireTimeSpinBox.value() / 1000.0
@@ -138,6 +144,8 @@ class ControlPanel(QtG.QWidget):
         view = StreamingView(self._stream_names, unstreamed_channels.pop(0))
         self.streamingViewsLayout.addWidget(view)
         self._streaming_views.append(view)
+
+        view.set_can_trigger(self._can_trigger_streams)
 
         view.channel_changed.connect(self._streaming_view_channel_changed)
         view.removed.connect(self._remove_streaming_view)
