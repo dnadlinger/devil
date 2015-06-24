@@ -9,6 +9,7 @@ import pyqtgraph as pg
 STREAM_IDX_TO_DISPLAY = 0
 
 COLOR_BG = (0, 43, 54)
+COLOR_VERSION_LINE = (0, 29, 36)
 COLOR_TRACE_ACTIVE = (238, 232, 213)
 COLOR_TRACE_INACTIVE = (101, 123, 131)
 COLOR_LABEL_BG_ACTIVE = (7, 54, 66)
@@ -22,8 +23,10 @@ class Dashboard(QtG.QMainWindow):
     closed = QtC.pyqtSignal()
     hide_channel = QtC.pyqtSignal(object)
 
-    def __init__(self):
+    def __init__(self, version_string):
         QtG.QWidget.__init__(self)
+
+        self._version_string = version_string
 
         settings = QtC.QSettings()
 
@@ -35,7 +38,7 @@ class Dashboard(QtG.QMainWindow):
         if stored_window_state:
             self.restoreState(stored_window_state)
 
-        self.setWindowTitle('Dashboard – DEVIL')
+        self.setWindowTitle('Dashboard – DEVIL ' + self._version_string)
         self._view = pg.GraphicsLayoutWidget()
         self._view.setBackground(COLOR_BG)
         self.setCentralWidget(self._view)
@@ -158,6 +161,17 @@ class Dashboard(QtG.QMainWindow):
         for l in self._channel_name_label_map.values():
             l.setMaximumWidth(col_width)
 
+        # FIXME: For some weird reason, this causes the channel traces to
+        # disappear (but not the name labels, etc.). Seems to be a pyqtgraph
+        # bug.
+        #
+        # self._view.nextRow()
+        # self._version_label = pg.LabelItem(justify='left')
+        # self._version_label.setText('DEVIL client v' + self._version_string,
+        #                             bold=True,
+        #                             color=QtG.QColor(*COLOR_VERSION_LINE))
+        # self._view.addItem(self._version_label, colspan=cols)
+
     def _add_plot_for_channel(self, guichannel):
         channel = guichannel.channel
 
@@ -228,7 +242,6 @@ class Dashboard(QtG.QMainWindow):
     def _update_status_colors(self, channel, status):
         curve = self._channel_curve_map[channel]
         label = self._channel_name_label_map[channel]
-        plot = self._channel_plot_map[channel]
 
         if status == Channel.Status.idle:
             curve.setPen(pg.mkPen(COLOR_TRACE_INACTIVE))

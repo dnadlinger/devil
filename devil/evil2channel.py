@@ -104,11 +104,12 @@ class Evil2Channel(Channel):
         self.status_changed.emit(new_status)
 
 
-def create_evil2_control_panel(channel):
+def create_evil2_control_panel(version_string, channel):
     reg_area = Evil2RegisterArea(channel._system_control_reg,
                                  channel._widget_name_to_reg)
 
-    cp = ControlPanel(channel.resource.display_name, STREAM_NAMES, reg_area)
+    cp = ControlPanel(version_string, channel.resource.display_name,
+                      STREAM_NAMES, reg_area)
 
     cp.set_error_conditions(channel.current_error_conditions())
     channel.error_conditions_changed.connect(cp.set_error_conditions)

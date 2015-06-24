@@ -13,13 +13,14 @@ class ControlPanel(QtG.QWidget):
     stream_subscription_removed = QtC.pyqtSignal(int)
     stream_acquisition_config_changed = QtC.pyqtSignal(float, int)
 
-    def __init__(self, channel_name, stream_names, register_area):
+    def __init__(self, version_string, channel_name, stream_names,
+                 register_area):
         QtG.QWidget.__init__(self)
 
         self._stream_names = stream_names
 
         loadUi('ui/controlpanel.ui', self)
-        self.setWindowTitle(channel_name + ' – DEVIL')
+        self.setWindowTitle(channel_name + ' – DEVIL ' + version_string)
 
         self._stream_save_file = None
 

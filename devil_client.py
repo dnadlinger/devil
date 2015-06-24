@@ -8,6 +8,8 @@ import zmq
 from PyQt4 import QtCore as QtC
 from PyQt4 import QtGui as QtG
 
+VERSION_STRING = '1.0.1'
+
 if __name__ == '__main__':
     import sys
 
@@ -35,7 +37,7 @@ if __name__ == '__main__':
 
     zmq_ctx = zmq.Context()
 
-    device_list = DeviceList()
+    device_list = DeviceList(VERSION_STRING)
     device_list.closed.connect(app.quit)
 
     def new_resource(host, resource):
@@ -49,7 +51,7 @@ if __name__ == '__main__':
 
         if resource.version.major == 2:
             device_list.register(Evil2Channel(zmq_ctx, host, resource),
-                create_evil2_control_panel)
+                lambda *args: create_evil2_control_panel(VERSION_STRING, *args))
         else:
             QtC.qWarning('Cannot handle EVIL version {}, ignoring'.format(
                 resource.version))

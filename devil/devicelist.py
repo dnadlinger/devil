@@ -12,9 +12,12 @@ class DeviceList(QtG.QWidget):
     closed = QtC.pyqtSignal()
     force_rescan = QtC.pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, version_string):
         QtG.QWidget.__init__(self)
         loadUi('ui/devicelist.ui', self)
+
+        self._version_string = version_string
+        self.setWindowTitle('Device List – DEVIL ' + version_string)
 
         s = QtC.QSettings()
         if s.contains(HEADER_SETTING):
@@ -111,7 +114,7 @@ class DeviceList(QtG.QWidget):
 
     def _open_dashboard(self):
         if not self._dashboard:
-            self._dashboard = Dashboard()
+            self._dashboard = Dashboard(self._version_string)
             to_show = [c for c in self.guichannels
                        if self._load_show_in_dashboard(c.channel.resource.dev_id)]
             self._dashboard.add_channels(to_show)
