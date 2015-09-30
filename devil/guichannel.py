@@ -41,5 +41,6 @@ class GuiChannel:
         self._control_panel = None
 
     def _set_trigger_from_status(self, status):
-        self._control_panel.set_can_trigger_streams(
-            status == self.channel.Status.configuring)
+        if self._control_panel:
+            self._control_panel.set_can_trigger_streams(
+                status == self.channel.Status.configuring)
