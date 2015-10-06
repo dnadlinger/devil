@@ -76,7 +76,8 @@ class DeviceList(QtG.QWidget):
         tw.setItem(row, 2, QtG.QTableWidgetItem(str(c.resource.version)))
 
         show_in_dashboard = QtG.QCheckBox()
-        show_in_dashboard.setChecked(self._load_show_in_dashboard(dev_id))
+        on_dashboard = self._load_show_in_dashboard(dev_id)
+        show_in_dashboard.setChecked(on_dashboard)
         show_in_dashboard.stateChanged.connect(
             lambda val: self._show_in_dashboard_changed(guichannel, val))
         self._channel_in_dashboard_boxes[guichannel] = show_in_dashboard
@@ -86,7 +87,9 @@ class DeviceList(QtG.QWidget):
         open_button.clicked.connect(guichannel.show_control_panel)
         tw.setCellWidget(row, 4, open_button)
 
-        if self._dashboard:
+        # If the channel had been on the dashboard before and the dashboard is
+        # open, immediately show it.
+        if on_dashboard and self._dashboard:
             self._dashboard.add_channel(guichannel)
 
     def _remove_channel(self, guichannel):
