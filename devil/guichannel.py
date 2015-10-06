@@ -7,6 +7,7 @@ class GuiChannel:
     def show_control_panel(self):
         if self._control_panel:
             self._control_panel.activateWindow()
+            self._control_panel.raise_()
         else:
             self._control_panel = self._create_control_panel_fn(self.channel)
             self._control_panel.closed.connect(self._destroy_control_panel)
