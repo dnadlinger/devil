@@ -298,7 +298,7 @@ class Channel(QtC.QObject):
                 'Received unknown notification type: {}{}'.format(method,
                                                                   params))
         except Exception as e:
-            self._rpc_error('Error while handling notification: {}'.format(e))
+            self._rpc_error('Error while handling notification: {} ({})'.format(e, type(e)))
 
     def _got_stream_packet(self, stream_idx, msg):
         try:
