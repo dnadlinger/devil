@@ -156,7 +156,7 @@ class Evil2RegisterArea(QtG.QWidget):
     def load_settings(self, settings):
         for key, value in settings.items():
             if key == 'systemControl':
-                self._set_control_flags(value)
+                self._system_control_reg.set_from_local_change(value)
                 continue
 
             widget = getattr(self, key, None)
