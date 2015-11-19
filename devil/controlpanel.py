@@ -173,7 +173,7 @@ class ControlPanel(QtG.QWidget):
         v.deleteLater()
 
         self._update_streaming_view_buttons()
-        self.stream_subscription_removed(v.channel)
+        self.stream_subscription_removed.emit(v.channel)
 
     def _update_streaming_view_buttons(self):
         """(De)activates streaming channel add/remove buttons.
