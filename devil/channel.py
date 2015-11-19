@@ -204,7 +204,7 @@ class Channel(QtC.QObject):
                          lambda succeeded: succeeded or self._register_conflict(
                              reg_idx))
 
-    def _registers(self):
+    def registers(self):
         return []
 
     def _register_conflict(self, reg_idx):
@@ -223,7 +223,7 @@ class Channel(QtC.QObject):
         self._stream_ports = ports
 
         # Initialize registers.
-        regs = self._registers()
+        regs = self.registers()
         for r in regs:
             self._reg_idx_to_object[r.idx] = r
             r.changed_locally.connect(lambda old_val, new_val, idx=r.idx:

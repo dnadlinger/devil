@@ -85,7 +85,7 @@ class Evil2Channel(Channel):
     def current_status(self):
         return self._current_status
 
-    def _registers(self):
+    def registers(self):
         regs = list(self._widget_name_to_reg.values())
         regs.append(self._system_control_reg)
         regs.append(self._system_condition_reg)
