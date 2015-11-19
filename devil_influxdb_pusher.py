@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-#
-# Pushes stream channel statistics to InfluxDB.
-#
-# Qt is only used here because we already have the networking implementation
-# from the GUI client.
-#
+
+"""
+Pushes stream channel statistics to InfluxDB.
+
+Qt is only used here because we already have the networking implementation
+from the GUI client.
+"""
 
 from devil.evil2channel import Evil2Channel
 import fliquer
@@ -25,13 +26,13 @@ class Pusher:
 
         self._channel = channel
         channel.connection_ready.connect(self._setup_streams)
-        channel.stream_packet_received.connect(self._got_packet)
+        channel.stream_packet_received.connect(self._got_stream_packet)
         channel.connection_failed.connect(self._channel_failed)
         channel.shutting_down.connect(self._channel_shutdown)
 
-        self._buffers = {}
+        self._stream_bufs = {}
         for k in STREAMS_TO_LOG:
-            self._buffers[k] = np.array([], dtype=np.int16)
+            self._stream_bufs[k] = np.array([], dtype=np.int16)
 
         self._on_disconnect = on_disconnect
 
@@ -39,15 +40,15 @@ class Pusher:
         for k in STREAMS_TO_LOG:
             self._channel.add_stream_subscription(k)
 
-    def _got_packet(self, packet):
+    def _got_stream_packet(self, packet):
         idx = packet.stream_idx
         if not idx in STREAMS_TO_LOG:
             return
-        self._buffers[idx] = np.append(self._buffers[idx], packet.samples)
-        self._push_if_full(idx)
+        self._stream_bufs[idx] = np.append(self._stream_bufs[idx], packet.samples)
+        self._push_stream_buf_if_full(idx)
 
-    def _push_if_full(self, idx):
-        buf = self._buffers[idx]
+    def _push_stream_buf_if_full(self, idx):
+        buf = self._stream_bufs[idx]
         if np.size(buf) < SAMPLE_WINDOW_SIZE:
             return
 
@@ -68,7 +69,7 @@ class Pusher:
             }
         }])
 
-        self._buffers[idx] = buf[SAMPLE_WINDOW_SIZE:]
+        self._stream_bufs[idx] = buf[SAMPLE_WINDOW_SIZE:]
 
     def _channel_failed(self, msg):
         QtC.qWarning(' :: Channel "{}" failed: {}'.format(
